@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useSpeech } from '../hooks/useSpeech'
+import { useState, useRef } from 'react'
+import { getTTSUrl, TTSEngine } from '../lib/tts'
 
 interface Sentence {
   english: string
@@ -19,12 +19,22 @@ interface Article {
   }[]
 }
 
+// 只保留美音温柔女声
+const VOICE = { label: '美音温柔女声', value: 'en-US-CoraMultilingualNeural' }
+
+const ENGINES: { label: string; value: TTSEngine }[] = [
+  { label: '微软Azure', value: 'azure' },
+  { label: 'TTSMaker', value: 'ttsmaker' },
+]
+
 export default function ArticlePanel() {
   const [showChinese, setShowChinese] = useState(false)
-  const [currentSpeed, setCurrentSpeed] = useState(1)
-  const { speak, speaking, supported } = useSpeech()
+  const [engine, setEngine] = useState<TTSEngine>('azure')
+  const [loadingIndex, setLoadingIndex] = useState<number | null>(null)
+  const audioCache = useRef<Map<string, string>>(new Map())
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  // 模拟数据，实际项目中应该从API获取
+  // 模拟数据
   const article: Article = {
     title: "The Quantum Revolution",
     theme: "Technology",
@@ -47,12 +57,18 @@ export default function ArticlePanel() {
     ]
   }
 
-  const handleSpeak = (text: string) => {
-    if (!supported) {
-      alert('Your browser does not support speech synthesis.')
-      return
+  const handleSpeak = async (text: string, idx: number) => {
+    setLoadingIndex(idx)
+    let url = audioCache.current.get(text + VOICE.value + engine)
+    if (!url) {
+      url = await getTTSUrl({ text, voice: VOICE.value, engine })
+      if (url) audioCache.current.set(text + VOICE.value + engine, url)
     }
-    speak({ text, rate: currentSpeed })
+    setLoadingIndex(null)
+    if (url && audioRef.current) {
+      audioRef.current.src = url || ''
+      audioRef.current.play()
+    }
   }
 
   return (
@@ -67,12 +83,16 @@ export default function ArticlePanel() {
         <div className="prose prose-lg max-w-none">
           {article.sentences.map((sentence, index) => (
             <div key={index} className="mb-6 group">
-              <p 
-                className={`cursor-pointer hover:bg-gray-50 p-2 rounded ${speaking ? 'bg-gray-50' : ''}`}
-                onClick={() => handleSpeak(sentence.english)}
+              <button
+                className="cursor-pointer hover:bg-gray-50 p-2 rounded flex items-center"
+                onClick={() => handleSpeak(sentence.english, index)}
+                disabled={loadingIndex === index}
               >
                 {sentence.english}
-              </p>
+                {loadingIndex === index && (
+                  <span className="ml-2 text-xs text-blue-500">加载中...</span>
+                )}
+              </button>
               {showChinese && (
                 <p className="text-gray-600 mt-2">{sentence.chinese}</p>
               )}
@@ -87,21 +107,21 @@ export default function ArticlePanel() {
           >
             {showChinese ? 'Hide Chinese' : 'Show Chinese'}
           </button>
-          
           <div className="flex items-center space-x-4">
-            <label className="text-sm">Speed:</label>
-            <input
-              type="range"
-              min="0.5"
-              max="1.5"
-              step="0.1"
-              value={currentSpeed}
-              onChange={(e) => setCurrentSpeed(parseFloat(e.target.value))}
-              className="w-32"
-            />
-            <span className="text-sm">{currentSpeed}x</span>
+            <span className="text-sm">发音风格: {VOICE.label}</span>
+            <label className="text-sm ml-4">TTS引擎:</label>
+            <select
+              value={engine}
+              onChange={e => setEngine(e.target.value as TTSEngine)}
+              className="border rounded px-2 py-1"
+            >
+              {ENGINES.map(e => (
+                <option key={e.value} value={e.value}>{e.label}</option>
+              ))}
+            </select>
           </div>
         </div>
+        <audio ref={audioRef} />
       </div>
 
       {/* 词汇表 */}
