@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { text, voice } = req.body;
+  const { text, voice, ssml } = req.body;
   const subscriptionKey = process.env.AZURE_TTS_KEY!;
   const region = process.env.AZURE_TTS_REGION!;
 
@@ -20,15 +20,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const result = await new Promise<any>((resolve, reject) => {
-      synthesizer.speakTextAsync(
-        text,
-        (result: any) => {
-          resolve(result);
-        },
-        (error: any) => {
-          reject(error);
-        }
-      );
+      const callback = (result: any) => resolve(result);
+      const errorCallback = (error: any) => reject(error);
+
+      if (ssml || (typeof text === 'string' && text.trim().startsWith('<speak'))) {
+        synthesizer.speakSsmlAsync(text, callback, errorCallback);
+      } else {
+        synthesizer.speakTextAsync(text, callback, errorCallback);
+      }
     });
 
     if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {

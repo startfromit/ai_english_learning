@@ -19,17 +19,36 @@ interface Article {
   }[]
 }
 
-// 只保留美音温柔女声
-const VOICE = { label: '美音温柔女声', value: 'en-US-CoraMultilingualNeural' }
+// 支持两个声音
+const VOICES = [
+  { label: '美音温柔女声', value: 'en-US-CoraMultilingualNeural' },
+  { label: '美音温柔男声', value: 'en-US-AndrewMultilingualNeural' },
+]
+
+const SPEEDS = [
+  { label: '慢', value: 'slow' },
+  { label: '正常', value: 'normal' },
+  { label: '快', value: 'fast' },
+]
 
 const ENGINES: { label: string; value: TTSEngine }[] = [
   { label: '微软Azure', value: 'azure' },
   { label: 'TTSMaker', value: 'ttsmaker' },
 ]
 
+function getAzureSsml(text: string, voice: string, speed: string) {
+  let rate = '0%';
+  if (speed === 'slow') rate = '-25%';
+  else if (speed === 'fast') rate = '+25%';
+  // Azure SSML 语速
+  return `<speak version='1.0' xml:lang='en-US'><voice name='${voice}'><prosody rate='${rate}'>${text}</prosody></voice></speak>`;
+}
+
 export default function ArticlePanel() {
   const [showChinese, setShowChinese] = useState(false)
   const [engine, setEngine] = useState<TTSEngine>('azure')
+  const [currentVoice, setCurrentVoice] = useState(VOICES[0].value)
+  const [currentSpeed, setCurrentSpeed] = useState(SPEEDS[1].value)
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null)
   const audioCache = useRef<Map<string, string>>(new Map())
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -59,10 +78,18 @@ export default function ArticlePanel() {
 
   const handleSpeak = async (text: string, idx: number) => {
     setLoadingIndex(idx)
-    let url = audioCache.current.get(text + VOICE.value + engine)
+    const cacheKey = text + currentVoice + engine + currentSpeed
+    let url = audioCache.current.get(cacheKey)
     if (!url) {
-      url = await getTTSUrl({ text, voice: VOICE.value, engine })
-      if (url) audioCache.current.set(text + VOICE.value + engine, url)
+      let ttsText = text
+      let voice = currentVoice
+      let extra: any = {}
+      if (engine === 'azure') {
+        ttsText = getAzureSsml(text, currentVoice, currentSpeed)
+        extra.ssml = true
+      }
+      url = await getTTSUrl({ text: ttsText, voice, engine, ...extra })
+      if (url) audioCache.current.set(cacheKey, url)
     }
     setLoadingIndex(null)
     if (url && audioRef.current) {
@@ -100,15 +127,34 @@ export default function ArticlePanel() {
           ))}
         </div>
 
-        <div className="flex items-center justify-between mt-8">
+        <div className="flex items-center justify-between mt-8 flex-wrap gap-2">
           <button
             className="btn btn-primary"
             onClick={() => setShowChinese(!showChinese)}
           >
             {showChinese ? 'Hide Chinese' : 'Show Chinese'}
           </button>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm">发音风格: {VOICE.label}</span>
+          <div className="flex items-center space-x-4 flex-wrap gap-2">
+            <label className="text-sm">声音:</label>
+            <select
+              value={currentVoice}
+              onChange={e => setCurrentVoice(e.target.value)}
+              className="border rounded px-2 py-1"
+            >
+              {VOICES.map(v => (
+                <option key={v.value} value={v.value}>{v.label}</option>
+              ))}
+            </select>
+            <label className="text-sm">语速:</label>
+            <select
+              value={currentSpeed}
+              onChange={e => setCurrentSpeed(e.target.value)}
+              className="border rounded px-2 py-1"
+            >
+              {SPEEDS.map(s => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
             <label className="text-sm ml-4">TTS引擎:</label>
             <select
               value={engine}
