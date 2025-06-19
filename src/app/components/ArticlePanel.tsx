@@ -79,7 +79,21 @@ export default function ArticlePanel() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [generating, setGenerating] = useState(false)
   const [customTheme, setCustomTheme] = useState(article.theme)
-  const [customLength, setCustomLength] = useState(200)
+  const [customLength, setCustomLength] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('customLength');
+      if (cached) {
+        const n = Number(cached);
+        if (!isNaN(n) && n >= 100 && n <= 500) return n;
+      }
+    }
+    return 200;
+  });
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('customLength', String(customLength));
+    }
+  }, [customLength]);
   const articleRef = useRef<HTMLDivElement | null>(null)
   const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light')
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
@@ -149,18 +163,6 @@ export default function ArticlePanel() {
   };
 
   // 主题和长度预设
-  const THEME_PRESETS = [
-    { zh: '科技', en: 'Technology' },
-    { zh: '文学', en: 'Literature' },
-    { zh: '历史', en: 'History' },
-    { zh: '生活', en: 'Life' },
-    { zh: '教育', en: 'Education' },
-    { zh: '健康', en: 'Health' },
-    { zh: '艺术', en: 'Art' },
-    { zh: '环境', en: 'Environment' },
-    { zh: '经济', en: 'Economy' },
-    { zh: '心理', en: 'Psychology' },
-  ];
   const TOPIC_SUGGESTS = [
     '人工智能的未来',
     '量子计算的应用',
@@ -260,17 +262,24 @@ export default function ArticlePanel() {
     </p>
   );
 
-  const handleGenerate = async () => {
+  // 支持自定义话题和随机生成
+  const handleGenerate = async (mode: 'custom' | 'random') => {
     setGenerating(true);
     try {
+      const body: any = { length: customLength };
+      if (mode === 'custom') {
+        body.topic = customTopic.trim();
+      } else if (mode === 'random') {
+        body.topic = '';
+      }
       const res = await fetch('/api/generate-article', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: customTheme, topic: customTopic, length: customLength })
+        body: JSON.stringify(body)
       });
       const data = await res.json();
       if (data.sentences && Array.isArray(data.sentences) && data.title) {
-        const newArticle = { ...articleState, sentences: data.sentences, theme: customTheme, title: data.title };
+        const newArticle = { ...articleState, sentences: data.sentences, theme: '', title: data.title };
         setArticle(newArticle);
         if (typeof window !== 'undefined') {
           localStorage.setItem('lastArticle', JSON.stringify(newArticle));
@@ -296,87 +305,72 @@ export default function ArticlePanel() {
           {/* 操作区卡片 */}
           <div className="bg-white/90 dark:bg-[#2c3e50]/90 rounded-xl p-6 shadow border border-gray-100 dark:border-gray-700 w-full max-w-2xl mb-6 flex flex-col items-center">
             <div className="w-full flex flex-col gap-4">
-              {/* 主题+话题 */}
-              <div className="flex flex-col md:flex-row gap-3 items-center w-full">
-                <div className="flex gap-2 items-center w-full md:w-1/2">
-                  <label className="text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">主题：</label>
-                  <select
-                    className="border rounded px-2 py-1 w-full bg-gray-50 dark:bg-[#2c3e50] dark:text-[#f8f4e9] focus:ring-2 focus:ring-indigo-300"
-                    value={customTheme}
-                    onChange={e => setCustomTheme(e.target.value)}
-                    disabled={generating}
-                  >
-                    {THEME_PRESETS.map(t => (
-                      <option key={t.en} value={t.en}>{t.zh}</option>
-                    ))}
-                  </select>
+              {/* 仅自定义话题输入区 */}
+              <div className="flex flex-col gap-2 w-full">
+                <label className="text-sm text-gray-700 dark:text-gray-200">自定义话题：</label>
+                <input
+                  type="text"
+                  className="border rounded px-2 py-1 w-full dark:bg-[#2c3e50] dark:text-[#f8f4e9] focus:ring-2 focus:ring-indigo-300"
+                  value={customTopic}
+                  onChange={e => setCustomTopic(e.target.value)}
+                  placeholder="如：人工智能的未来 | 量子计算的应用 ..."
+                  disabled={generating}
+                  style={{ fontStyle: customTopic ? 'normal' : 'italic', color: customTopic ? undefined : '#aaa' }}
+                />
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {TOPIC_SUGGESTS.slice(0, 4).map(sug => (
+                    <button
+                      key={sug}
+                      type="button"
+                      className="px-2 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-200 hover:bg-indigo-100 dark:hover:bg-indigo-800 border border-gray-200 dark:border-gray-600 transition"
+                      onClick={() => setCustomTopic(sug)}
+                      disabled={generating}
+                    >
+                      {sug}
+                    </button>
+                  ))}
                 </div>
-                <div className="flex flex-col w-full md:w-1/2">
-                  <input
-                    type="text"
-                    className="border rounded px-2 py-1 w-full dark:bg-[#2c3e50] dark:text-[#f8f4e9] focus:ring-2 focus:ring-indigo-300"
-                    value={customTopic}
-                    onChange={e => setCustomTopic(e.target.value)}
-                    placeholder="如：人工智能的未来 | 量子计算的应用 ..."
-                    disabled={generating}
-                    style={{ fontStyle: customTopic ? 'normal' : 'italic', color: customTopic ? undefined : '#aaa' }}
-                  />
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {TOPIC_SUGGESTS.slice(0, 4).map(sug => (
-                      <button
-                        key={sug}
-                        type="button"
-                        className="px-2 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-200 hover:bg-indigo-100 dark:hover:bg-indigo-800 border border-gray-200 dark:border-gray-600 transition"
-                        onClick={() => setCustomTopic(sug)}
-                        disabled={generating}
-                      >
-                        {sug}
-                      </button>
-                    ))}
-                  </div>
-                  <span className="text-xs text-gray-400 mt-1">可以输入具体话题，如"{TOPIC_SUGGESTS[0]}"</span>
-                </div>
+                <span className="text-xs text-gray-400 mt-1">可以输入具体话题，如"{TOPIC_SUGGESTS[0]}"</span>
               </div>
               {/* 长度+按钮 */}
-              <div className="flex flex-col md:flex-row gap-3 items-center w-full justify-between mt-2">
-                <div className="flex gap-2 items-center">
-                  <label className="text-sm text-gray-700 dark:text-gray-200">长度：</label>
-                  <select
-                    className="border rounded px-2 py-1 w-24 bg-gray-50 dark:bg-[#2c3e50] dark:text-[#f8f4e9] focus:ring-2 focus:ring-indigo-300"
-                    value={customLength}
-                    onChange={e => setCustomLength(Number(e.target.value))}
-                    disabled={generating}
-                  >
-                    {LENGTH_PRESETS.map(l => (
-                      <option key={l} value={l}>{l}词</option>
-                    ))}
-                  </select>
+              <div className="flex flex-col gap-2 w-full mt-2">
+                <div className="flex items-center whitespace-nowrap gap-2 w-full">
+                  <label className="text-sm text-gray-700 dark:text-gray-200 mr-2 whitespace-nowrap">长度：</label>
                   <input
-                    type="number"
-                    className="border rounded px-2 py-1 w-20 dark:bg-[#2c3e50] dark:text-[#f8f4e9] focus:ring-2 focus:ring-indigo-300"
-                    value={customLength}
-                    onChange={e => setCustomLength(Number(e.target.value))}
-                    min={50}
+                    type="range"
+                    min={100}
                     max={500}
                     step={10}
-                    placeholder="自定义长度"
+                    value={customLength}
+                    onChange={e => setCustomLength(Number(e.target.value))}
                     disabled={generating}
+                    className="accent-indigo-500 max-w-xs w-full"
+                    style={{ minWidth: 120 }}
                   />
+                  <span className="ml-2 text-base font-semibold w-12 text-center select-none bg-gray-100 dark:bg-gray-700 rounded px-2 py-0.5 border border-gray-200 dark:border-gray-600">{customLength}</span>
                 </div>
-                <button
-                  className="btn btn-primary shadow-md px-6 py-2 text-base rounded-lg font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition disabled:opacity-60"
-                  onClick={handleGenerate}
-                  disabled={generating}
-                >
-                  {generating ? '生成中...' : '生成短文'}
-                </button>
+                <div className="flex gap-2 justify-end min-w-fit w-full mt-2">
+                  <button
+                    className="btn btn-primary shadow-md px-6 py-2 text-base rounded-lg font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition disabled:opacity-60"
+                    onClick={() => handleGenerate('custom')}
+                    disabled={generating || !customTopic.trim()}
+                  >
+                    {generating ? '生成中...' : '生成短文'}
+                  </button>
+                  <button
+                    className="btn btn-secondary shadow-md px-6 py-2 text-base rounded-lg font-semibold bg-gray-200 text-gray-700 hover:bg-indigo-50 transition disabled:opacity-60"
+                    onClick={() => handleGenerate('random')}
+                    disabled={generating}
+                  >
+                    随机生成
+                  </button>
+                </div>
               </div>
             </div>
           </div>
           {/* 内容区卡片：标题+短文 */}
           <div className="bg-white/90 dark:bg-[#2c3e50]/90 rounded-xl p-8 shadow border border-gray-100 dark:border-gray-700 mb-4 transition-all duration-300 w-full max-w-2xl flex flex-col items-center">
             <h1 className="text-3xl font-serif text-center mb-2">{articleState.title}</h1>
-            <p className="text-gray-500 text-center mb-6 text-base">Theme: {articleState.theme}</p>
             <div className="w-full mt-2">{renderParagraph()}</div>
           </div>
         </div>
