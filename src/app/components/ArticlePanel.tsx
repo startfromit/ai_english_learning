@@ -90,10 +90,32 @@ export default function ArticlePanel() {
   const [showChineseIndex, setShowChineseIndex] = useState<number | null>(null)
 
   // 用于支持动态更新短文
-  const [articleState, setArticle] = useState(article);
+  const [articleState, setArticle] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('lastArticle');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch {}
+      }
+    }
+    return article;
+  });
+
+  // 页面加载时同步localStorage（防止首次渲染不同步）
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('lastArticle');
+      if (cached) {
+        try {
+          setArticle(JSON.parse(cached));
+        } catch {}
+      }
+    }
+  }, []);
 
   // 拼接英文段落
-  const englishParagraph = articleState.sentences.map(s => s.english).join(' ');
+  const englishParagraph = articleState.sentences.map((s: Sentence) => s.english).join(' ');
 
   // 读取缓存（优先 localStorage）
   function getAudioCache(key: string): string | undefined {
@@ -149,8 +171,12 @@ export default function ArticlePanel() {
         body: JSON.stringify({ theme: customTheme, length: customLength })
       });
       const data = await res.json();
-      if (data.sentences && Array.isArray(data.sentences)) {
-        setArticle((prev) => ({ ...prev, sentences: data.sentences, theme: customTheme }));
+      if (data.sentences && Array.isArray(data.sentences) && data.title) {
+        const newArticle = { ...articleState, sentences: data.sentences, theme: customTheme, title: data.title };
+        setArticle(newArticle);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('lastArticle', JSON.stringify(newArticle));
+        }
         setTimeout(() => {
           articleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
@@ -196,7 +222,7 @@ export default function ArticlePanel() {
 
   const renderParagraph = () => (
     <p className="text-lg leading-8 font-normal">
-      {articleState.sentences.map((s, idx) => (
+      {articleState.sentences.map((s: Sentence, idx: number) => (
         <span
           key={idx}
           className={`relative group cursor-pointer inline align-baseline transition-all duration-150 ${activeIndex === idx ? 'border-b border-dashed border-indigo-300/50' : ''}`}
