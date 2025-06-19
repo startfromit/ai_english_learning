@@ -76,10 +76,31 @@ export default function ArticlePanel() {
     ]
   }
 
+  // 读取缓存（优先 localStorage）
+  function getAudioCache(key: string): string | undefined {
+    if (typeof window === 'undefined') return undefined;
+    const mem = audioCache.current.get(key);
+    if (mem) return mem;
+    const local = localStorage.getItem('audioCache_' + key);
+    if (local) {
+      audioCache.current.set(key, local);
+      return local;
+    }
+    return undefined;
+  }
+
+  // 写入缓存（内存+localStorage）
+  function setAudioCache(key: string, url: string) {
+    audioCache.current.set(key, url);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('audioCache_' + key, url);
+    }
+  }
+
   const handleSpeak = async (text: string, idx: number) => {
     setLoadingIndex(idx)
     const cacheKey = text + currentVoice + engine + currentSpeed
-    let url = audioCache.current.get(cacheKey)
+    let url = getAudioCache(cacheKey)
     if (!url) {
       let ttsText = text
       let voice = currentVoice
@@ -89,7 +110,7 @@ export default function ArticlePanel() {
         extra.ssml = true
       }
       url = await getTTSUrl({ text: ttsText, voice, engine, ...extra })
-      if (url) audioCache.current.set(cacheKey, url)
+      if (url) setAudioCache(cacheKey, url)
     }
     setLoadingIndex(null)
     if (url && audioRef.current) {
