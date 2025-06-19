@@ -200,7 +200,14 @@ export default function ArticlePanel() {
         <span
           key={idx}
           className={`relative group cursor-pointer inline align-baseline transition-all duration-150 ${activeIndex === idx ? 'border-b border-dashed border-indigo-300/50' : ''}`}
-          style={{ fontFamily: 'inherit', fontWeight: 400, fontSize: '1rem', cursor: loadingIndex !== null ? 'not-allowed' : 'pointer', borderBottomWidth: activeIndex === idx ? 1 : 0 }}
+          style={{
+            fontFamily: 'inherit',
+            fontWeight: 400,
+            fontSize: '1rem',
+            cursor: loadingIndex !== null ? 'not-allowed' : 'pointer',
+            borderBottomWidth: activeIndex === idx ? 1 : 0,
+            pointerEvents: loadingIndex !== null && loadingIndex !== idx ? 'none' : 'auto'
+          }}
           onMouseEnter={() => handleMouseEnter(idx)}
           onMouseLeave={handleMouseLeave}
           onMouseMove={e => handleMouseMove(e, idx)}
@@ -212,7 +219,7 @@ export default function ArticlePanel() {
           {s.english}
           {/* loading 动画 */}
           {loadingIndex === idx && (
-            <span className="absolute -top-5 left-1/2 -translate-x-1/2 z-50">
+            <span className="absolute -top-5 right-0 z-50">
               <svg className="animate-spin h-4 w-4 text-indigo-400" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
