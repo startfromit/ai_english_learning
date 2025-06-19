@@ -89,20 +89,7 @@ export default function ArticlePanel() {
   const [showChineseGlobal, setShowChineseGlobal] = useState(false)
   const [showChineseIndex, setShowChineseIndex] = useState<number | null>(null)
 
-  // 用于支持动态更新短文
-  const [articleState, setArticle] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const cached = localStorage.getItem('lastArticle');
-      if (cached) {
-        try {
-          return JSON.parse(cached);
-        } catch {}
-      }
-    }
-    return article;
-  });
-
-  // 页面加载时同步localStorage（防止首次渲染不同步）
+  const [articleState, setArticle] = useState<Article>(article)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem('lastArticle');
@@ -161,39 +148,33 @@ export default function ArticlePanel() {
     }
   };
 
-  // 新增：生成短文
-  const handleGenerate = async () => {
-    setGenerating(true);
-    try {
-      const res = await fetch('/api/generate-article', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: customTheme, length: customLength })
-      });
-      const data = await res.json();
-      if (data.sentences && Array.isArray(data.sentences) && data.title) {
-        const newArticle = { ...articleState, sentences: data.sentences, theme: customTheme, title: data.title };
-        setArticle(newArticle);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('lastArticle', JSON.stringify(newArticle));
-        }
-        setTimeout(() => {
-          articleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
-      } else {
-        alert(data.error || '生成失败');
-      }
-    } catch (e) {
-      alert('生成失败');
-    }
-    setGenerating(false);
-  }
-
   // 主题和长度预设
   const THEME_PRESETS = [
-    '科技', '文学', '历史', '生活', '教育', '健康', '艺术', '环境', '经济', '心理'
+    { zh: '科技', en: 'Technology' },
+    { zh: '文学', en: 'Literature' },
+    { zh: '历史', en: 'History' },
+    { zh: '生活', en: 'Life' },
+    { zh: '教育', en: 'Education' },
+    { zh: '健康', en: 'Health' },
+    { zh: '艺术', en: 'Art' },
+    { zh: '环境', en: 'Environment' },
+    { zh: '经济', en: 'Economy' },
+    { zh: '心理', en: 'Psychology' },
+  ];
+  const TOPIC_SUGGESTS = [
+    '人工智能的未来',
+    '量子计算的应用',
+    '可持续能源',
+    '数字健康',
+    '虚拟现实',
+    '太空探索',
+    '智能家居',
+    '区块链技术',
+    '脑机接口',
+    '自动驾驶'
   ];
   const LENGTH_PRESETS = [100, 150, 200, 250, 300];
+  const [customTopic, setCustomTopic] = useState('');
 
   // 只保留一块英文段落展示，采用流式p标签+span方案，悬浮时句子加若有若无的虚线下划线，点击即可朗读，气泡跟随鼠标，消失有延迟
   const handleMouseEnter = (idx: number) => {
@@ -279,9 +260,144 @@ export default function ArticlePanel() {
     </p>
   );
 
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch('/api/generate-article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme: customTheme, topic: customTopic, length: customLength })
+      });
+      const data = await res.json();
+      if (data.sentences && Array.isArray(data.sentences) && data.title) {
+        const newArticle = { ...articleState, sentences: data.sentences, theme: customTheme, title: data.title };
+        setArticle(newArticle);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('lastArticle', JSON.stringify(newArticle));
+        }
+        setTimeout(() => {
+          articleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      } else {
+        alert(data.error || '生成失败');
+      }
+    } catch (e) {
+      alert('生成失败');
+    }
+    setGenerating(false);
+  }
+
   return (
     <div className={themeMode === 'light' ? '' : 'bg-[#2c3e50] text-[#f8f4e9] transition-colors duration-300'}>
       <audio ref={audioRef} />
+      <div className="flex flex-col lg:flex-row gap-8 items-start justify-center w-full max-w-7xl mx-auto">
+        {/* 左侧主区 */}
+        <div className="flex-1 flex flex-col items-center">
+          {/* 操作区卡片 */}
+          <div className="bg-white/90 dark:bg-[#2c3e50]/90 rounded-xl p-6 shadow border border-gray-100 dark:border-gray-700 w-full max-w-2xl mb-6 flex flex-col items-center">
+            <div className="w-full flex flex-col gap-4">
+              {/* 主题+话题 */}
+              <div className="flex flex-col md:flex-row gap-3 items-center w-full">
+                <div className="flex gap-2 items-center w-full md:w-1/2">
+                  <label className="text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">主题：</label>
+                  <select
+                    className="border rounded px-2 py-1 w-full bg-gray-50 dark:bg-[#2c3e50] dark:text-[#f8f4e9] focus:ring-2 focus:ring-indigo-300"
+                    value={customTheme}
+                    onChange={e => setCustomTheme(e.target.value)}
+                    disabled={generating}
+                  >
+                    {THEME_PRESETS.map(t => (
+                      <option key={t.en} value={t.en}>{t.zh}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col w-full md:w-1/2">
+                  <input
+                    type="text"
+                    className="border rounded px-2 py-1 w-full dark:bg-[#2c3e50] dark:text-[#f8f4e9] focus:ring-2 focus:ring-indigo-300"
+                    value={customTopic}
+                    onChange={e => setCustomTopic(e.target.value)}
+                    placeholder="如：人工智能的未来 | 量子计算的应用 ..."
+                    disabled={generating}
+                    style={{ fontStyle: customTopic ? 'normal' : 'italic', color: customTopic ? undefined : '#aaa' }}
+                  />
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {TOPIC_SUGGESTS.slice(0, 4).map(sug => (
+                      <button
+                        key={sug}
+                        type="button"
+                        className="px-2 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-200 hover:bg-indigo-100 dark:hover:bg-indigo-800 border border-gray-200 dark:border-gray-600 transition"
+                        onClick={() => setCustomTopic(sug)}
+                        disabled={generating}
+                      >
+                        {sug}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-xs text-gray-400 mt-1">可以输入具体话题，如"{TOPIC_SUGGESTS[0]}"</span>
+                </div>
+              </div>
+              {/* 长度+按钮 */}
+              <div className="flex flex-col md:flex-row gap-3 items-center w-full justify-between mt-2">
+                <div className="flex gap-2 items-center">
+                  <label className="text-sm text-gray-700 dark:text-gray-200">长度：</label>
+                  <select
+                    className="border rounded px-2 py-1 w-24 bg-gray-50 dark:bg-[#2c3e50] dark:text-[#f8f4e9] focus:ring-2 focus:ring-indigo-300"
+                    value={customLength}
+                    onChange={e => setCustomLength(Number(e.target.value))}
+                    disabled={generating}
+                  >
+                    {LENGTH_PRESETS.map(l => (
+                      <option key={l} value={l}>{l}词</option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    className="border rounded px-2 py-1 w-20 dark:bg-[#2c3e50] dark:text-[#f8f4e9] focus:ring-2 focus:ring-indigo-300"
+                    value={customLength}
+                    onChange={e => setCustomLength(Number(e.target.value))}
+                    min={50}
+                    max={500}
+                    step={10}
+                    placeholder="自定义长度"
+                    disabled={generating}
+                  />
+                </div>
+                <button
+                  className="btn btn-primary shadow-md px-6 py-2 text-base rounded-lg font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition disabled:opacity-60"
+                  onClick={handleGenerate}
+                  disabled={generating}
+                >
+                  {generating ? '生成中...' : '生成短文'}
+                </button>
+              </div>
+            </div>
+          </div>
+          {/* 内容区卡片：标题+短文 */}
+          <div className="bg-white/90 dark:bg-[#2c3e50]/90 rounded-xl p-8 shadow border border-gray-100 dark:border-gray-700 mb-4 transition-all duration-300 w-full max-w-2xl flex flex-col items-center">
+            <h1 className="text-3xl font-serif text-center mb-2">{articleState.title}</h1>
+            <p className="text-gray-500 text-center mb-6 text-base">Theme: {articleState.theme}</p>
+            <div className="w-full mt-2">{renderParagraph()}</div>
+          </div>
+        </div>
+        {/* 词汇表区 */}
+        <div className="w-full lg:w-80 bg-white p-6 rounded-lg shadow-sm min-h-[320px] flex flex-col">
+          <h2 className="text-xl font-serif mb-4">Vocabulary</h2>
+          {articleState.vocabulary && articleState.vocabulary.length > 0 ? (
+            <div className="space-y-4">
+              {articleState.vocabulary.map((item, index) => (
+                <div key={index} className="border-b pb-4">
+                  <h3 className="font-bold">{item.word}</h3>
+                  <p className="text-gray-600">{item.meaning}</p>
+                  <p className="text-sm italic mt-2">{item.example}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-gray-400 text-sm text-center mt-8">暂无重点词汇</div>
+          )}
+        </div>
+      </div>
       <div className="flex justify-end mb-2">
         <button
           className="btn btn-primary px-3 py-1 text-xs rounded shadow"
@@ -295,131 +411,6 @@ export default function ArticlePanel() {
         >
           {showChineseGlobal ? '隐藏全部中文' : '显示全部中文'}
         </button>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* 文章主体 */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between mb-8">
-            <div className="text-center">
-              <h1 className="text-3xl font-serif mb-2">{articleState.title}</h1>
-              <p className="text-gray-600 dark:text-gray-300">Theme: {articleState.theme}</p>
-            </div>
-            <div className="flex flex-col gap-2 items-end bg-white/80 dark:bg-[#2c3e50]/80 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
-              <div className="flex gap-2 items-center flex-wrap">
-                <label className="text-sm text-gray-700 dark:text-gray-200">主题：</label>
-                <select
-                  className="border rounded px-2 py-1 w-28 bg-gray-50 dark:bg-[#2c3e50] dark:text-[#f8f4e9]"
-                  value={customTheme}
-                  onChange={e => setCustomTheme(e.target.value)}
-                  disabled={generating}
-                >
-                  {THEME_PRESETS.map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                  <option value={customTheme} hidden>{customTheme}</option>
-                </select>
-                <input
-                  type="text"
-                  className="border rounded px-2 py-1 w-28 dark:bg-[#2c3e50] dark:text-[#f8f4e9]"
-                  value={customTheme}
-                  onChange={e => setCustomTheme(e.target.value)}
-                  placeholder="自定义主题"
-                  disabled={generating}
-                />
-                <label className="text-sm text-gray-700 dark:text-gray-200 ml-2">长度：</label>
-                <select
-                  className="border rounded px-2 py-1 w-20 bg-gray-50 dark:bg-[#2c3e50] dark:text-[#f8f4e9]"
-                  value={customLength}
-                  onChange={e => setCustomLength(Number(e.target.value))}
-                  disabled={generating}
-                >
-                  {LENGTH_PRESETS.map(l => (
-                    <option key={l} value={l}>{l}词</option>
-                  ))}
-                  <option value={customLength} hidden>{customLength}词</option>
-                </select>
-                <input
-                  type="number"
-                  className="border rounded px-2 py-1 w-20 dark:bg-[#2c3e50] dark:text-[#f8f4e9]"
-                  value={customLength}
-                  onChange={e => setCustomLength(Number(e.target.value))}
-                  min={50}
-                  max={500}
-                  step={10}
-                  placeholder="自定义长度"
-                  disabled={generating}
-                />
-                <button
-                  className="btn btn-primary shadow-md"
-                  onClick={handleGenerate}
-                  disabled={generating}
-                >
-                  {generating ? '生成中...' : '生成短文'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* 英文段落展示区 */}
-          <div className="bg-white/90 dark:bg-[#2c3e50]/90 rounded-xl p-6 shadow border border-gray-100 dark:border-gray-700 mb-4 transition-all duration-300">
-            {renderParagraph()}
-          </div>
-
-          <div className="flex items-center justify-between mt-8 flex-wrap gap-2">
-            <button
-              className="btn btn-primary"
-              onClick={() => setShowChinese(!showChinese)}
-            >
-              {showChinese ? 'Hide Chinese' : 'Show Chinese'}
-            </button>
-            <div className="flex items-center space-x-4 flex-wrap gap-2">
-              <label className="text-sm">声音:</label>
-              <select
-                value={currentVoice}
-                onChange={e => setCurrentVoice(e.target.value)}
-                className="border rounded px-2 py-1"
-              >
-                {VOICES.map(v => (
-                  <option key={v.value} value={v.value}>{v.label}</option>
-                ))}
-              </select>
-              <label className="text-sm">语速:</label>
-              <select
-                value={currentSpeed}
-                onChange={e => setCurrentSpeed(e.target.value)}
-                className="border rounded px-2 py-1"
-              >
-                {SPEEDS.map(s => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
-              <label className="text-sm ml-4">TTS引擎:</label>
-              <select
-                value={engine}
-                onChange={e => setEngine(e.target.value as TTSEngine)}
-                className="border rounded px-2 py-1"
-              >
-                {ENGINES.map(e => (
-                  <option key={e.value} value={e.value}>{e.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* 词汇表 */}
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-xl font-serif mb-4">Vocabulary</h2>
-          <div className="space-y-4">
-            {article.vocabulary.map((item, index) => (
-              <div key={index} className="border-b pb-4">
-                <h3 className="font-bold">{item.word}</h3>
-                <p className="text-gray-600">{item.meaning}</p>
-                <p className="text-sm italic mt-2">{item.example}</p>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   )
