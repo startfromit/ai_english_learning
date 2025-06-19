@@ -83,6 +83,9 @@ export default function ArticlePanel() {
   const articleRef = useRef<HTMLDivElement | null>(null)
   const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light')
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const [showBubbleIndex, setShowBubbleIndex] = useState<number | null>(null)
+  const [bubblePos, setBubblePos] = useState<{x: number, y: number, absLeft: number, absTop: number} | null>(null)
+  const bubbleTimer = useRef<NodeJS.Timeout | null>(null)
   const [showChineseGlobal, setShowChineseGlobal] = useState(false)
   const [showChineseIndex, setShowChineseIndex] = useState<number | null>(null)
 
@@ -165,7 +168,31 @@ export default function ArticlePanel() {
   ];
   const LENGTH_PRESETS = [100, 150, 200, 250, 300];
 
-  // 只保留一块英文段落展示，采用流式p标签+span方案，悬浮时句子加若有若无的虚线下划线，点击即可朗读
+  // 只保留一块英文段落展示，采用流式p标签+span方案，悬浮时句子加若有若无的虚线下划线，点击即可朗读，气泡跟随鼠标，消失有延迟
+  const handleMouseEnter = (idx: number) => {
+    setActiveIndex(idx);
+    setShowBubbleIndex(idx);
+  };
+  const handleMouseLeave = () => {
+    setShowBubbleIndex(null);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLSpanElement>, idx: number) => {
+    if (activeIndex === idx) {
+      if (bubbleTimer.current) {
+        clearTimeout(bubbleTimer.current);
+        bubbleTimer.current = null;
+      }
+      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      setBubblePos({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        absLeft: rect.left + window.scrollX,
+        absTop: rect.top + window.scrollY
+      });
+    }
+  };
+
   const renderParagraph = () => (
     <p className="text-lg leading-8 font-normal">
       {articleState.sentences.map((s, idx) => (
@@ -173,21 +200,29 @@ export default function ArticlePanel() {
           key={idx}
           className={`relative group cursor-pointer inline align-baseline transition-all duration-150 ${activeIndex === idx ? 'border-b border-dashed border-indigo-300/50' : ''}`}
           style={{ fontFamily: 'inherit', fontWeight: 400, fontSize: '1rem', cursor: 'pointer', borderBottomWidth: activeIndex === idx ? 1 : 0 }}
-          onMouseEnter={() => setActiveIndex(idx)}
-          onMouseLeave={() => setActiveIndex(null)}
+          onMouseEnter={() => handleMouseEnter(idx)}
+          onMouseLeave={handleMouseLeave}
+          onMouseMove={e => handleMouseMove(e, idx)}
           onClick={e => { e.stopPropagation(); handleSpeak(s.english, idx); }}
         >
           {s.english}
           {idx < articleState.sentences.length - 1 && ' '}
           <AnimatePresence>
-            {activeIndex === idx && (
+            {showBubbleIndex === idx && bubblePos && (
               <motion.div
                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: -28, scale: 1 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 transition={{ duration: 0.22 }}
-                className="absolute bottom-full left-1/2 -translate-x-1/2 z-30 px-3 py-1 bg-gray-800 text-white text-sm rounded shadow-lg pointer-events-none select-none whitespace-pre-line max-w-xs text-center"
-                style={{ minWidth: 'max-content', maxWidth: 240 }}
+                className="fixed z-50 px-3 py-1 bg-gray-800 text-white text-sm rounded shadow-lg pointer-events-none select-none whitespace-pre-line max-w-xs text-left"
+                style={{
+                  left: bubblePos.absLeft + bubblePos.x + 8,
+                  top: bubblePos.absTop + bubblePos.y + 24,
+                  minWidth: 'max-content',
+                  maxWidth: 320,
+                  width: 'max-content',
+                  transform: 'translate(-50%, 0)'
+                }}
               >
                 {s.chinese}
               </motion.div>
