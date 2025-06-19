@@ -165,122 +165,55 @@ export default function ArticlePanel() {
   ];
   const LENGTH_PRESETS = [100, 150, 200, 250, 300];
 
-  // 让英文段落自然换行，只有内容中包含换行符时才换行
-  const renderParagraph = () => {
-    // 将句子数组转换为带有换行符的文本
-    const paragraphText = articleState.sentences.map(s => s.english).join(' ');
-    
-    // 计算每个句子的位置信息
-    const [sentencePositions, setSentencePositions] = useState<Array<{start: number, end: number, width: number}>>([]);
-    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-    const textRef = useRef<HTMLParagraphElement>(null);
-    
-    // 更新句子位置信息
-    useEffect(() => {
-      if (!textRef.current) return;
-      
-      const text = textRef.current.textContent || '';
-      const positions = [];
-      let currentPos = 0;
-      
-      for (const sentence of articleState.sentences) {
-        const start = text.indexOf(sentence.english, currentPos);
-        if (start === -1) {
-          positions.push({ start: currentPos, end: currentPos, width: 0 });
-          continue;
-        }
-        const end = start + sentence.english.length;
-        // 创建一个临时的span来测量实际渲染宽度
-        const tempSpan = document.createElement('span');
-        tempSpan.textContent = sentence.english;
-        tempSpan.style.visibility = 'hidden';
-        tempSpan.style.position = 'absolute';
-        tempSpan.style.pointerEvents = 'none';
-        document.body.appendChild(tempSpan);
-        const width = tempSpan.offsetWidth;
-        document.body.removeChild(tempSpan);
-        
-        positions.push({ start, end, width });
-        currentPos = end;
-      }
-      
-      setSentencePositions(positions);
-    }, [articleState.sentences]);
-    
-    return (
-      <div className="relative">
-        <p 
-          ref={textRef}
-          className="text-lg leading-8 font-normal whitespace-pre-wrap relative z-10"
+  // 只保留一块英文段落展示，采用流式p标签+span方案
+  const renderParagraph = () => (
+    <p className="text-lg leading-8 font-normal">
+      {articleState.sentences.map((s, idx) => (
+        <span
+          key={idx}
+          className="relative group cursor-pointer inline align-baseline"
+          style={{ fontFamily: 'inherit', fontWeight: 400, fontSize: '1rem' }}
+          onMouseEnter={() => setActiveIndex(idx)}
+          onMouseLeave={() => setActiveIndex(null)}
         >
-          {paragraphText}
-        </p>
-        
-        {/* 为每个句子添加悬浮效果和中文提示 */}
-        {articleState.sentences.map((s, idx) => {
-          const pos = sentencePositions[idx];
-          if (!pos) return null;
-          
-          return (
-            <div key={idx} className="inline-flex items-center group relative">
-              <span
-                className="relative hover:bg-yellow-100/30 dark:hover:bg-yellow-900/30 rounded cursor-pointer px-0.5 -mx-0.5"
-                style={{
-                  height: '1.5em',
-                  display: 'inline-flex',
-                  alignItems: 'center'
-                }}
-                onMouseEnter={() => setHoveredIndex(idx)}
-                onMouseLeave={() => setHoveredIndex(null)}
+          {s.english}
+          {idx < articleState.sentences.length - 1 && ' '}
+          <AnimatePresence>
+            {activeIndex === idx && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: -28, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ duration: 0.22 }}
+                className="absolute bottom-full left-1/2 -translate-x-1/2 z-30 px-3 py-1 bg-gray-800 text-white text-sm rounded shadow-lg pointer-events-none select-none whitespace-pre-line max-w-xs text-center"
+                style={{ minWidth: 'max-content', maxWidth: 240 }}
               >
-                {s.english}
-                
-                {/* 悬浮气泡显示中文 */}
-                <AnimatePresence>
-                  {hoveredIndex === idx && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: -28, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.22 }}
-                      className="absolute bottom-full left-1/2 -translate-x-1/2 z-30 px-3 py-1 bg-gray-800 text-white text-sm rounded shadow-lg pointer-events-none select-none whitespace-pre-line max-w-xs text-center"
-                      style={{ minWidth: 'max-content' }}
-                    >
-                      {s.chinese}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </span>
-              
-              {/* 朗读按钮 */}
-              <AnimatePresence>
-                {hoveredIndex === idx && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.15 }}
-                    className="ml-1 p-1 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSpeak(s.english, idx);
-                    }}
-                    title="朗读"
-                    onMouseEnter={() => setHoveredIndex(idx)} // Keep hover state when moving to button
-                  >
-                    <SpeakerWaveIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  </motion.button>
-                )}
-              </AnimatePresence>
-              
-              {/* 添加空格，除非是最后一个句子 */}
-              {idx < articleState.sentences.length - 1 && ' '}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
+                {s.chinese}
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <AnimatePresence>
+            {activeIndex === idx && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.15 }}
+                className="ml-1 p-1 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors"
+                onClick={e => {
+                  e.stopPropagation();
+                  handleSpeak(s.english, idx);
+                }}
+                title="朗读"
+              >
+                <SpeakerWaveIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </span>
+      ))}
+    </p>
+  );
 
   return (
     <div className={themeMode === 'light' ? '' : 'bg-[#2c3e50] text-[#f8f4e9] transition-colors duration-300'}>
