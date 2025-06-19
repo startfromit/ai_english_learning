@@ -117,26 +117,27 @@ export default function ArticlePanel() {
   }
 
   const handleSpeak = async (text: string, idx: number) => {
-    setLoadingIndex(idx)
-    const cacheKey = text + currentVoice + engine + currentSpeed
-    let url = getAudioCache(cacheKey)
+    if (loadingIndex !== null) return; // 禁止并发TTS
+    setLoadingIndex(idx);
+    const cacheKey = text + currentVoice + engine + currentSpeed;
+    let url = getAudioCache(cacheKey);
     if (!url) {
-      let ttsText = text
-      let voice = currentVoice
-      let extra: any = {}
+      let ttsText = text;
+      let voice = currentVoice;
+      let extra: any = {};
       if (engine === 'azure') {
-        ttsText = getAzureSsml(text, currentVoice, currentSpeed)
-        extra.ssml = true
+        ttsText = getAzureSsml(text, currentVoice, currentSpeed);
+        extra.ssml = true;
       }
-      url = await getTTSUrl({ text: ttsText, voice, engine, ...extra })
-      if (url) setAudioCache(cacheKey, url)
+      url = await getTTSUrl({ text: ttsText, voice, engine, ...extra });
+      if (url) setAudioCache(cacheKey, url);
     }
-    setLoadingIndex(null)
+    setLoadingIndex(null);
     if (url && audioRef.current) {
-      audioRef.current.src = url || ''
-      audioRef.current.play()
+      audioRef.current.src = url || '';
+      audioRef.current.play();
     }
-  }
+  };
 
   // 新增：生成短文
   const handleGenerate = async () => {
@@ -199,13 +200,25 @@ export default function ArticlePanel() {
         <span
           key={idx}
           className={`relative group cursor-pointer inline align-baseline transition-all duration-150 ${activeIndex === idx ? 'border-b border-dashed border-indigo-300/50' : ''}`}
-          style={{ fontFamily: 'inherit', fontWeight: 400, fontSize: '1rem', cursor: 'pointer', borderBottomWidth: activeIndex === idx ? 1 : 0 }}
+          style={{ fontFamily: 'inherit', fontWeight: 400, fontSize: '1rem', cursor: loadingIndex !== null ? 'not-allowed' : 'pointer', borderBottomWidth: activeIndex === idx ? 1 : 0 }}
           onMouseEnter={() => handleMouseEnter(idx)}
           onMouseLeave={handleMouseLeave}
           onMouseMove={e => handleMouseMove(e, idx)}
-          onClick={e => { e.stopPropagation(); handleSpeak(s.english, idx); }}
+          onClick={e => {
+            e.stopPropagation();
+            if (loadingIndex === null) handleSpeak(s.english, idx);
+          }}
         >
           {s.english}
+          {/* loading 动画 */}
+          {loadingIndex === idx && (
+            <span className="absolute -top-5 left-1/2 -translate-x-1/2 z-50">
+              <svg className="animate-spin h-4 w-4 text-indigo-400" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+            </span>
+          )}
           {idx < articleState.sentences.length - 1 && ' '}
           <AnimatePresence>
             {showBubbleIndex === idx && bubblePos && (
@@ -235,6 +248,7 @@ export default function ArticlePanel() {
 
   return (
     <div className={themeMode === 'light' ? '' : 'bg-[#2c3e50] text-[#f8f4e9] transition-colors duration-300'}>
+      <audio ref={audioRef} />
       <div className="flex justify-end mb-2">
         <button
           className="btn btn-primary px-3 py-1 text-xs rounded shadow"
