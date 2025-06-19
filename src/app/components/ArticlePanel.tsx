@@ -165,16 +165,17 @@ export default function ArticlePanel() {
   ];
   const LENGTH_PRESETS = [100, 150, 200, 250, 300];
 
-  // 只保留一块英文段落展示，采用流式p标签+span方案
+  // 只保留一块英文段落展示，采用流式p标签+span方案，悬浮时句子加若有若无的虚线下划线，点击即可朗读
   const renderParagraph = () => (
     <p className="text-lg leading-8 font-normal">
       {articleState.sentences.map((s, idx) => (
         <span
           key={idx}
-          className="relative group cursor-pointer inline align-baseline"
-          style={{ fontFamily: 'inherit', fontWeight: 400, fontSize: '1rem' }}
+          className={`relative group cursor-pointer inline align-baseline transition-all duration-150 ${activeIndex === idx ? 'border-b border-dashed border-indigo-300/50' : ''}`}
+          style={{ fontFamily: 'inherit', fontWeight: 400, fontSize: '1rem', cursor: 'pointer', borderBottomWidth: activeIndex === idx ? 1 : 0 }}
           onMouseEnter={() => setActiveIndex(idx)}
           onMouseLeave={() => setActiveIndex(null)}
+          onClick={e => { e.stopPropagation(); handleSpeak(s.english, idx); }}
         >
           {s.english}
           {idx < articleState.sentences.length - 1 && ' '}
@@ -190,24 +191,6 @@ export default function ArticlePanel() {
               >
                 {s.chinese}
               </motion.div>
-            )}
-          </AnimatePresence>
-          <AnimatePresence>
-            {activeIndex === idx && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.15 }}
-                className="ml-1 p-1 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors"
-                onClick={e => {
-                  e.stopPropagation();
-                  handleSpeak(s.english, idx);
-                }}
-                title="朗读"
-              >
-                <SpeakerWaveIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-              </motion.button>
             )}
           </AnimatePresence>
         </span>
