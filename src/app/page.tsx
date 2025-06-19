@@ -5,7 +5,7 @@ import Footer from './components/Footer'
 
 export default function Home() {
   return (
-    <main className="min-h-screen flex flex-col">
+    <main className="min-h-screen flex flex-col bg-[#f8f4e9] dark:bg-[#181c23]">
       <Header />
       <div className="flex-grow container py-8">
         <Suspense fallback={<div>Loading...</div>}>

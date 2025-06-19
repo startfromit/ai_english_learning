@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { EB_Garamond, Lato } from 'next/font/google'
 import './globals.css'
+import ThemeProvider from './components/ThemeProvider'
 
 const ebGaramond = EB_Garamond({ 
   subsets: ['latin'],
@@ -15,10 +16,7 @@ const lato = Lato({
   display: 'swap',
 })
 
-export const metadata: Metadata = {
-  title: 'Daily English Reading',
-  description: 'AI-powered English learning platform for daily reading practice',
-}
+
 
 export default function RootLayout({
   children,
@@ -27,8 +25,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${ebGaramond.variable} ${lato.variable} font-sans bg-[#f8f4e9] text-[#2c3e50]`}>
-        {children}
+      <body className={`${ebGaramond.variable} ${lato.variable} font-sans bg-[#f8f4e9] text-[#2c3e50] dark:bg-[#181c23] dark:text-gray-100`}>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

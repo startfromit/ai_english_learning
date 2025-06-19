@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useContext } from 'react'
 import { getTTSUrl, TTSEngine } from '../lib/tts'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SpeakerWaveIcon, EyeIcon } from '@heroicons/react/24/outline'
+import { ThemeContext } from './ThemeProvider'
 
 interface Sentence {
   english: string
@@ -255,7 +256,7 @@ export default function ArticlePanel() {
   const [currentVoice, setCurrentVoice] = useState(VOICES[0].value)
   const [currentSpeed, setCurrentSpeed] = useState(SPEEDS[1].value)
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null)
-  const audioCache = useRef<Map<string, string>>(new Map())
+  const audioCache = useRef<Map<string, string | undefined>>(new Map())
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [generating, setGenerating] = useState(false)
   const [customTheme, setCustomTheme] = useState(article.theme)
@@ -275,7 +276,7 @@ export default function ArticlePanel() {
     }
   }, [customLength]);
   const articleRef = useRef<HTMLDivElement | null>(null)
-  const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light')
+  const { themeMode, setThemeMode } = useContext(ThemeContext) as { themeMode: 'light' | 'dark', setThemeMode: (mode: 'light' | 'dark') => void }
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [showBubbleIndex, setShowBubbleIndex] = useState<number | null>(null)
   const [bubblePos, setBubblePos] = useState<{x: number, y: number, absLeft: number, absTop: number} | null>(null)
@@ -303,13 +304,11 @@ export default function ArticlePanel() {
   function getAudioCache(key: string): string | undefined {
     if (typeof window === 'undefined') return undefined;
     const mem = audioCache.current.get(key);
-    if (mem) return mem;
+    if (typeof mem === 'string') return mem;
     const local = localStorage.getItem('audioCache_' + key);
-    if (local) {
-      audioCache.current.set(key, local);
-      return local;
-    }
-    return undefined;
+    if (local === null || local === undefined || local === '') return undefined;
+    audioCache.current.set(key, local);
+    return local;
   }
 
   // 写入缓存（内存+localStorage）
@@ -324,7 +323,7 @@ export default function ArticlePanel() {
     if (loadingIndex !== null) return; // 禁止并发TTS
     setLoadingIndex(idx);
     const cacheKey = text + currentVoice + engine + currentSpeed;
-    let url = getAudioCache(cacheKey);
+    let url: string | null | undefined = getAudioCache(cacheKey);
     if (!url) {
       let ttsText = text;
       let voice = currentVoice;
@@ -337,8 +336,8 @@ export default function ArticlePanel() {
       if (url) setAudioCache(cacheKey, url);
     }
     setLoadingIndex(null);
-    if (url && audioRef.current) {
-      audioRef.current.src = url || '';
+    if (audioRef.current) {
+      audioRef.current.src = typeof url === 'string' && url ? url : '';
       audioRef.current.play();
     }
   };
@@ -382,6 +381,84 @@ export default function ArticlePanel() {
     }
   };
 
+  // 整体播放相关状态
+  const [isPlayingAll, setIsPlayingAll] = useState(false);
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+  const playAllAbortRef = useRef<{aborted: boolean}>({aborted: false});
+
+  // 顺序播放所有句子
+  const handlePlayAll = async () => {
+    if (isPlayingAll) {
+      // 停止播放
+      playAllAbortRef.current.aborted = true;
+      setIsPlayingAll(false);
+      setPlayingIndex(null);
+      if (audioRef.current) audioRef.current.pause();
+      return;
+    }
+    playAllAbortRef.current.aborted = false;
+    setIsPlayingAll(true);
+    setPlayingIndex(0);
+
+    // 1. 生成所有音频Promise（有缓存的直接resolve，没有缓存的并发TTS）
+    const audioPromises = articleState.sentences.map((s, i) => {
+      const cacheKey = s.english + currentVoice + engine + currentSpeed;
+      const cached = getAudioCache(cacheKey);
+      if (cached) return Promise.resolve(cached);
+      let ttsText = s.english;
+      let voice = currentVoice;
+      let extra: any = {};
+      if (engine === 'azure') {
+        ttsText = getAzureSsml(s.english, currentVoice, currentSpeed);
+        extra.ssml = true;
+      }
+      return getTTSUrl({ text: ttsText, voice, engine, ...extra }).then(url => {
+        if (url) setAudioCache(cacheKey, url);
+        return url || '';
+      });
+    });
+
+    // 2. 顺序播放（边播边等）
+    for (let i = 0; i < audioPromises.length; i++) {
+      if (playAllAbortRef.current.aborted) break;
+      setPlayingIndex(i);
+      const url = await audioPromises[i];
+      if (audioRef.current) {
+        audioRef.current.src = typeof url === 'string' ? url : '';
+        audioRef.current.play();
+        try {
+          await new Promise<void>((resolve, reject) => {
+            const onEnded = () => {
+              audioRef.current?.removeEventListener('ended', onEnded);
+              audioRef.current?.removeEventListener('pause', onPause);
+              resolve();
+            };
+            const onPause = () => {
+              audioRef.current?.removeEventListener('ended', onEnded);
+              audioRef.current?.removeEventListener('pause', onPause);
+              resolve();
+            };
+            audioRef.current?.addEventListener('ended', onEnded);
+            audioRef.current?.addEventListener('pause', onPause);
+            audioRef.current?.play();
+          });
+        } catch {}
+      }
+    }
+    setIsPlayingAll(false);
+    setPlayingIndex(null);
+  };
+
+  // 播放时切换语音/语速/内容时自动停止整体播放
+  useEffect(() => {
+    if (isPlayingAll) {
+      playAllAbortRef.current.aborted = true;
+      setIsPlayingAll(false);
+      setPlayingIndex(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentVoice, engine, currentSpeed, articleState]);
+
   const renderParagraph = () => (
     <p className="text-lg leading-8 font-normal">
       {articleState.sentences.map((s: Sentence, idx: number) => (
@@ -392,16 +469,17 @@ export default function ArticlePanel() {
             fontFamily: 'inherit',
             fontWeight: 400,
             fontSize: '1rem',
-            cursor: loadingIndex !== null ? 'not-allowed' : 'pointer',
+            cursor: loadingIndex !== null ? 'not-allowed' : isPlayingAll ? 'not-allowed' : 'pointer',
             borderBottomWidth: activeIndex === idx ? 1 : 0,
-            pointerEvents: loadingIndex !== null && loadingIndex !== idx ? 'none' : 'auto'
+            pointerEvents: (loadingIndex !== null && loadingIndex !== idx) || isPlayingAll ? 'none' : 'auto',
+            background: isPlayingAll && playingIndex === idx ? 'rgba(129,140,248,0.12)' : undefined
           }}
           onMouseEnter={() => handleMouseEnter(idx)}
           onMouseLeave={handleMouseLeave}
           onMouseMove={e => handleMouseMove(e, idx)}
           onClick={e => {
             e.stopPropagation();
-            if (loadingIndex === null) handleSpeak(s.english, idx);
+            if (loadingIndex === null && !isPlayingAll) handleSpeak(s.english, idx);
           }}
         >
           {s.english}
@@ -411,6 +489,14 @@ export default function ArticlePanel() {
               <svg className="animate-spin h-4 w-4 text-indigo-400" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+            </span>
+          )}
+          {isPlayingAll && playingIndex === idx && (
+            <span className="absolute -top-5 left-0 z-50">
+              <svg className="animate-pulse h-4 w-4 text-indigo-500" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path fill="currentColor" d="M10 8l6 4-6 4V8z" />
               </svg>
             </span>
           )}
@@ -476,25 +562,25 @@ export default function ArticlePanel() {
   }
 
   return (
-    <div className={themeMode === 'light' ? '' : 'bg-[#2c3e50] text-[#f8f4e9] transition-colors duration-300'}>
+    <div className={themeMode === 'light' ? 'bg-[#f8f4e9] text-gray-900' : 'bg-[#181c23] text-gray-100 transition-colors duration-300'}>
       <audio ref={audioRef} />
       <div className="flex flex-col lg:flex-row gap-8 items-start justify-center w-full max-w-7xl mx-auto">
         {/* 左侧主区 */}
         <div className="flex-1 flex flex-col items-center">
           {/* 操作区卡片 */}
-          <div className="bg-white/90 dark:bg-[#2c3e50]/90 rounded-xl p-6 shadow border border-gray-100 dark:border-gray-700 w-full max-w-2xl mb-6 flex flex-col items-center">
+          <div className="bg-white dark:bg-[#23272f] border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow w-full max-w-2xl mb-6 flex flex-col items-center">
             <div className="w-full flex flex-col gap-4">
               {/* 仅自定义话题输入区 */}
               <div className="flex flex-col gap-2 w-full">
                 <label className="text-sm text-gray-700 dark:text-gray-200">自定义话题：</label>
                 <input
                   type="text"
-                  className="border rounded px-2 py-1 w-full dark:bg-[#2c3e50] dark:text-[#f8f4e9] focus:ring-2 focus:ring-indigo-300"
+                  className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 w-full bg-white dark:bg-[#23272f] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-300 placeholder-gray-400 dark:placeholder-gray-500"
                   value={customTopic}
                   onChange={e => setCustomTopic(e.target.value)}
                   placeholder="如：人工智能的未来 | 量子计算的应用 ..."
                   disabled={generating}
-                  style={{ fontStyle: customTopic ? 'normal' : 'italic', color: customTopic ? undefined : '#aaa' }}
+                  style={{ fontStyle: customTopic ? 'normal' : 'italic' }}
                 />
                 <div className="flex flex-wrap gap-1 mt-1">
                   {topicSuggests.map(sug => (
@@ -523,21 +609,21 @@ export default function ArticlePanel() {
                     value={customLength}
                     onChange={e => setCustomLength(Number(e.target.value))}
                     disabled={generating}
-                    className="accent-indigo-500 max-w-xs w-full"
+                    className="accent-indigo-500 max-w-xs w-full bg-white dark:bg-[#23272f]"
                     style={{ minWidth: 120 }}
                   />
-                  <span className="ml-2 text-base font-semibold w-12 text-center select-none bg-gray-100 dark:bg-gray-700 rounded px-2 py-0.5 border border-gray-200 dark:border-gray-600">{customLength}</span>
+                  <span className="ml-2 text-base font-semibold w-12 text-center select-none bg-gray-100 dark:bg-[#23272f] text-gray-900 dark:text-gray-100 rounded px-2 py-0.5 border border-gray-200 dark:border-gray-700">{customLength}</span>
                 </div>
                 <div className="flex gap-2 justify-end min-w-fit w-full mt-2">
                   <button
-                    className="btn btn-primary shadow-md px-6 py-2 text-base rounded-lg font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition disabled:opacity-60"
+                    className="btn btn-primary shadow-md px-6 py-2 text-base rounded-lg font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition disabled:opacity-60 dark:bg-indigo-700 dark:hover:bg-indigo-800"
                     onClick={() => handleGenerate('custom')}
                     disabled={generating || !customTopic.trim()}
                   >
                     {generating ? '生成中...' : '生成短文'}
                   </button>
                   <button
-                    className="btn btn-secondary shadow-md px-6 py-2 text-base rounded-lg font-semibold bg-gray-200 text-gray-700 hover:bg-indigo-50 transition disabled:opacity-60"
+                    className="btn btn-secondary shadow-md px-6 py-2 text-base rounded-lg font-semibold bg-gray-200 text-gray-700 hover:bg-indigo-50 transition disabled:opacity-60 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
                     onClick={() => handleGenerate('random')}
                     disabled={generating}
                   >
@@ -548,26 +634,49 @@ export default function ArticlePanel() {
             </div>
           </div>
           {/* 内容区卡片：标题+短文 */}
-          <div className="bg-white/90 dark:bg-[#2c3e50]/90 rounded-xl p-8 shadow border border-gray-100 dark:border-gray-700 mb-4 transition-all duration-300 w-full max-w-2xl flex flex-col items-center">
-            <h1 className="text-3xl font-serif text-center mb-2">{articleState.title}</h1>
-            <div className="w-full mt-2">{renderParagraph()}</div>
+          <div className="bg-white dark:bg-[#23272f] border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow mb-4 transition-all duration-300 w-full max-w-2xl flex flex-col items-center">
+            <h1 className="text-3xl font-serif text-serif text-center mb-2 text-gray-900 dark:text-white drop-shadow">{articleState.title}</h1>
+            <div className="w-full mt-2 text-gray-900 dark:text-gray-100">{renderParagraph()}</div>
+          </div>
+          {/* 整体播放按钮 */}
+          <div className="flex justify-end w-full max-w-2xl mb-2">
+            <button
+              className={`btn btn-primary px-4 py-1 rounded shadow flex items-center gap-2 ${isPlayingAll ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-600 hover:bg-indigo-700'} text-white transition disabled:opacity-60`}
+              onClick={handlePlayAll}
+              disabled={generating || articleState.sentences.length === 0}
+            >
+              {isPlayingAll ? (
+                <>
+                  <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                  停止播放
+                </>
+              ) : (
+                <>
+                  <SpeakerWaveIcon className="w-4 h-4" />
+                  整体播放
+                </>
+              )}
+            </button>
+            {isPlayingAll && playingIndex !== null && (
+              <span className="ml-4 text-sm text-gray-500">正在播放第 {playingIndex + 1} / {articleState.sentences.length} 句</span>
+            )}
           </div>
         </div>
         {/* 词汇表区 */}
-        <div className="w-full lg:w-80 bg-white p-6 rounded-lg shadow-sm min-h-[320px] flex flex-col">
-          <h2 className="text-xl font-serif mb-4">Vocabulary</h2>
+        <div className="w-full lg:w-80 bg-white dark:bg-[#23272f] border border-gray-200 dark:border-gray-700 p-6 rounded-xl shadow-sm min-h-[320px] flex flex-col">
+          <h2 className="text-xl font-serif text-serif mb-4 text-gray-900 dark:text-white">Vocabulary</h2>
           {articleState.vocabulary && articleState.vocabulary.length > 0 ? (
             <div className="space-y-4">
               {articleState.vocabulary.map((item, index) => (
                 <div key={index} className="border-b pb-4">
-                  <h3 className="font-bold">{item.word}</h3>
-                  <p className="text-gray-600">{item.meaning}</p>
-                  <p className="text-sm italic mt-2">{item.example}</p>
+                  <h3 className="font-bold text-gray-900 dark:text-white">{item.word}</h3>
+                  <p className="text-gray-600 dark:text-gray-100">{item.meaning}</p>
+                  <p className="text-sm italic mt-2 text-gray-400 dark:text-gray-400">{item.example}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-gray-400 text-sm text-center mt-8">暂无重点词汇</div>
+            <div className="text-gray-400 dark:text-gray-400 text-sm text-center mt-8">暂无重点词汇</div>
           )}
         </div>
       </div>
@@ -577,12 +686,6 @@ export default function ArticlePanel() {
           onClick={() => setThemeMode(themeMode === 'light' ? 'dark' : 'light')}
         >
           {themeMode === 'light' ? '切换深色' : '切换浅色'}
-        </button>
-        <button
-          className={`ml-2 px-3 py-1 text-xs rounded shadow border ${showChineseGlobal ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-600'}`}
-          onClick={() => setShowChineseGlobal(v => !v)}
-        >
-          {showChineseGlobal ? '隐藏全部中文' : '显示全部中文'}
         </button>
       </div>
     </div>

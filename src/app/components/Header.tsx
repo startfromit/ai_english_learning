@@ -5,7 +5,7 @@ export default function Header() {
     <header className="bg-[#2c3e50] text-white">
       <div className="container py-4">
         <nav className="flex items-center justify-between">
-          <Link href="/" className="text-2xl font-serif">
+          <Link href="/" className="text-2xl font-serif text-serif">
             Daily English
           </Link>
           <div className="space-x-6">
