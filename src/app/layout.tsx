@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import { EB_Garamond, Lato } from 'next/font/google'
 import './globals.css'
+import { AuthProvider } from '../components/AuthProvider'
 import ThemeProvider from './components/ThemeProvider'
+import AuthNav from '../components/AuthNav'
 
 const ebGaramond = EB_Garamond({ 
   subsets: ['latin'],
@@ -26,9 +28,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${ebGaramond.variable} ${lato.variable} font-sans bg-[#f8f4e9] text-[#2c3e50] dark:bg-[#181c23] dark:text-gray-100`}>
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <AuthNav />
+            <main className="container mx-auto px-4 py-8">
+              {children}
+            </main>
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   )
