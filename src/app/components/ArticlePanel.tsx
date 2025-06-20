@@ -560,6 +560,19 @@ export default function ArticlePanel() {
     setGenerating(false);
   }
 
+  function handleShare() {
+    if (navigator.share) {
+      navigator.share({
+        title: articleState?.title || 'AI English Article',
+        text: articleState?.sentences.map(s => s.english).join(' '),
+        url: window.location.href
+      });
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      alert('链接已复制到剪贴板');
+    }
+  }
+
   return (
     <div className={themeMode === 'light' ? 'bg-[#f8f4e9] text-gray-900' : 'bg-[#181c23] text-gray-100 transition-colors duration-300'}>
       <audio ref={audioRef} />
@@ -633,9 +646,12 @@ export default function ArticlePanel() {
             </div>
           </div>
           {/* 内容区卡片：标题+短文 */}
-          <div className="bg-white dark:bg-[#23272f] border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow mb-4 transition-all duration-300 w-full max-w-2xl flex flex-col items-center">
-            <div className="flex justify-between items-center mb-4">
-              <h1 className="text-3xl font-normal text-center mb-4 text-gray-800 dark:text-gray-100 tracking-tight leading-tight">{articleState.title}</h1>
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-2xl mx-auto">
+            <h2 className="text-3xl font-serif font-bold text-gray-800 dark:text-white mb-4 text-center">
+              {articleState.title}
+            </h2>
+            {/* 播放和分享按钮，居中 */}
+            <div className="flex justify-center gap-4 mb-6">
               <button
                 onClick={handlePlayAll}
                 disabled={loadingIndex !== null}
@@ -644,16 +660,23 @@ export default function ArticlePanel() {
               >
                 {isPlayingAll ? (
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9 9 9" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 9 14 9" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H14M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
                   </svg>
                 ) : (
                   <SpeakerWaveIcon className="w-6 h-6" />
                 )}
               </button>
+              <button
+                onClick={handleShare}
+                title="分享"
+                className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 8a3 3 0 11-6 0 3 3 0 016 0zm6 8a3 3 0 11-6 0 3 3 0 016 0zm-6 0a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </button>
             </div>
-            <div className="w-full mt-2 text-gray-900 dark:text-gray-100">{renderParagraph()}</div>
+            {renderParagraph()}
           </div>
         </div>
         {/* 词汇表区 */}
