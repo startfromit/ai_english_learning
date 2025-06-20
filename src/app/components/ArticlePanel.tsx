@@ -697,14 +697,6 @@ export default function ArticlePanel() {
           )}
         </div>
       </div>
-      <div className="flex justify-end mb-2">
-        <button
-          className="btn btn-primary px-3 py-1 text-xs rounded shadow"
-          onClick={() => setThemeMode(themeMode === 'light' ? 'dark' : 'light')}
-        >
-          {themeMode === 'light' ? '切换深色' : '切换浅色'}
-        </button>
-      </div>
     </div>
   )
 } 
