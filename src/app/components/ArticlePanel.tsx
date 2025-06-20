@@ -462,19 +462,17 @@ export default function ArticlePanel() {
   }, [currentVoice, engine, currentSpeed, articleState]);
 
   const renderParagraph = () => (
-    <p className="text-lg leading-8 font-normal">
+    <p className="text-base leading-relaxed font-normal text-gray-700 dark:text-gray-300">
       {articleState.sentences.map((s: Sentence, idx: number) => (
         <span
           key={idx}
-          className={`relative group cursor-pointer inline align-baseline transition-all duration-150 ${activeIndex === idx ? 'border-b border-dashed border-indigo-300/50' : ''}`}
+          className={`relative group inline align-baseline transition-colors duration-150 ${activeIndex === idx ? 'border-b border-dashed border-indigo-300/50' : ''}`}
           style={{
-            fontFamily: 'inherit',
             fontWeight: 400,
-            fontSize: '1rem',
             cursor: loadingIndex !== null ? 'not-allowed' : isPlayingAll ? 'not-allowed' : 'pointer',
             borderBottomWidth: activeIndex === idx ? 1 : 0,
             pointerEvents: (loadingIndex !== null && loadingIndex !== idx) || isPlayingAll ? 'none' : 'auto',
-            background: isPlayingAll && playingIndex === idx ? 'rgba(129,140,248,0.12)' : undefined
+            background: isPlayingAll && playingIndex === idx ? 'rgba(129,140,248,0.05)' : undefined
           }}
           onMouseEnter={() => handleMouseEnter(idx)}
           onMouseLeave={handleMouseLeave}
@@ -637,7 +635,7 @@ export default function ArticlePanel() {
           </div>
           {/* 内容区卡片：标题+短文 */}
           <div className="bg-white dark:bg-[#23272f] border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow mb-4 transition-all duration-300 w-full max-w-2xl flex flex-col items-center">
-            <h1 className="text-3xl font-serif text-serif text-center mb-2 text-gray-900 dark:text-white drop-shadow">{articleState.title}</h1>
+            <h1 className="text-3xl font-normal text-center mb-4 text-gray-800 dark:text-gray-100 tracking-tight leading-tight">{articleState.title}</h1>
             <div className="w-full mt-2 text-gray-900 dark:text-gray-100">{renderParagraph()}</div>
           </div>
           {/* 整体播放按钮 */}
