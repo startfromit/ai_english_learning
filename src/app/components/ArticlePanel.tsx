@@ -466,17 +466,16 @@ export default function ArticlePanel() {
       {articleState.sentences.map((s: Sentence, idx: number) => (
         <span
           key={idx}
-          className={`relative group inline align-baseline transition-colors duration-150 ${activeIndex === idx ? 'border-b border-dashed border-indigo-300/50' : ''}`}
+          className={`relative group inline align-baseline transition-colors duration-150 p-1 rounded-md ${
+            (activeIndex === idx || (isPlayingAll && playingIndex === idx)) 
+            ? 'bg-yellow-200/70 dark:bg-yellow-200/20' 
+            : ''
+          }`}
           style={{
             fontWeight: 400,
             cursor: loadingIndex !== null ? 'not-allowed' : isPlayingAll ? 'not-allowed' : 'pointer',
-            borderBottomWidth: activeIndex === idx ? 1 : 0,
             pointerEvents: (loadingIndex !== null && loadingIndex !== idx) || isPlayingAll ? 'none' : 'auto',
-            background: isPlayingAll && playingIndex === idx ? 'rgba(129,140,248,0.05)' : undefined
           }}
-          onMouseEnter={() => handleMouseEnter(idx)}
-          onMouseLeave={handleMouseLeave}
-          onMouseMove={e => handleMouseMove(e, idx)}
           onClick={e => {
             e.stopPropagation();
             if (loadingIndex === null && !isPlayingAll) handleSpeak(s.english, idx);
@@ -492,14 +491,14 @@ export default function ArticlePanel() {
               </svg>
             </span>
           )}
-          {isPlayingAll && playingIndex === idx && (
+          {/* {isPlayingAll && playingIndex === idx && (
             <span className="absolute -top-5 left-0 z-50">
               <svg className="animate-pulse h-4 w-4 text-indigo-500" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                 <path fill="currentColor" d="M10 8l6 4-6 4V8z" />
               </svg>
             </span>
-          )}
+          )} */}
           {idx < articleState.sentences.length - 1 && ' '}
           <AnimatePresence>
             {showBubbleIndex === idx && bubblePos && (
@@ -635,31 +634,26 @@ export default function ArticlePanel() {
           </div>
           {/* 内容区卡片：标题+短文 */}
           <div className="bg-white dark:bg-[#23272f] border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow mb-4 transition-all duration-300 w-full max-w-2xl flex flex-col items-center">
-            <h1 className="text-3xl font-normal text-center mb-4 text-gray-800 dark:text-gray-100 tracking-tight leading-tight">{articleState.title}</h1>
+            <div className="flex justify-between items-center mb-4">
+              <h1 className="text-3xl font-normal text-center mb-4 text-gray-800 dark:text-gray-100 tracking-tight leading-tight">{articleState.title}</h1>
+              <button
+                onClick={handlePlayAll}
+                disabled={loadingIndex !== null}
+                title={isPlayingAll ? "Pause" : "Play All"}
+                className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isPlayingAll ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9 9 9" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 9 14 9" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ) : (
+                  <SpeakerWaveIcon className="w-6 h-6" />
+                )}
+              </button>
+            </div>
             <div className="w-full mt-2 text-gray-900 dark:text-gray-100">{renderParagraph()}</div>
-          </div>
-          {/* 整体播放按钮 */}
-          <div className="flex justify-end w-full max-w-2xl mb-2">
-            <button
-              className={`btn btn-primary px-4 py-1 rounded shadow flex items-center gap-2 ${isPlayingAll ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-600 hover:bg-indigo-700'} text-white transition disabled:opacity-60`}
-              onClick={handlePlayAll}
-              disabled={generating || articleState.sentences.length === 0}
-            >
-              {isPlayingAll ? (
-                <>
-                  <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-                  停止播放
-                </>
-              ) : (
-                <>
-                  <SpeakerWaveIcon className="w-4 h-4" />
-                  整体播放
-                </>
-              )}
-            </button>
-            {isPlayingAll && playingIndex !== null && (
-              <span className="ml-4 text-sm text-gray-500">正在播放第 {playingIndex + 1} / {articleState.sentences.length} 句</span>
-            )}
           </div>
         </div>
         {/* 词汇表区 */}
