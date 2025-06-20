@@ -260,16 +260,18 @@ export default function ArticlePanel() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [generating, setGenerating] = useState(false)
   const [customTheme, setCustomTheme] = useState(article.theme)
-  const [customLength, setCustomLength] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const cached = localStorage.getItem('customLength');
-      if (cached) {
-        const n = Number(cached);
-        if (!isNaN(n) && n >= 100 && n <= 500) return n;
+  const [customLength, setCustomLength] = useState(300);
+  
+  // Initialize customLength from localStorage after mount
+  useEffect(() => {
+    const cached = localStorage.getItem('customLength');
+    if (cached) {
+      const n = Number(cached);
+      if (!isNaN(n) && n >= 100 && n <= 500) {
+        setCustomLength(n);
       }
     }
-    return 200;
-  });
+  }, []);
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('customLength', String(customLength));
