@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getRemainingPlays } from '@/lib/auth'
 import { useAuth } from '@/hooks/useAuth'
 import AuthGuard from '@/components/AuthGuard'
+import Link from 'next/link'
 
 function ProfileContent() {
   const { user, provider } = useAuth()
@@ -103,7 +104,13 @@ function ProfileContent() {
           </div>
         </div>
         
-        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <Link
+            href="/"
+            className="text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
+          >
+            &larr; Back to Home
+          </Link>
           <button
             onClick={() => router.push('/auth/signout')}
             className="text-sm font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
