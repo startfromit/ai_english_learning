@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -36,8 +37,14 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session if expired - required for Server Components
-  const { data: { session } } = await supabase.auth.getSession()
+  // Check both Supabase and NextAuth sessions
+  const [supabaseSession, nextAuthToken] = await Promise.all([
+    supabase.auth.getSession(),
+    getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+  ])
+  
+  // User is authenticated if either Supabase or NextAuth session exists
+  const isAuthenticated = supabaseSession.data.session || nextAuthToken
   
   // Protected routes that require authentication
   const protectedRoutes = ['/generate', '/play', '/profile']
@@ -50,14 +57,14 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = authRoutes.includes(request.nextUrl.pathname)
   
   // If trying to access protected route without session, redirect to sign in
-  if (isProtectedRoute && !session) {
+  if (isProtectedRoute && !isAuthenticated) {
     const redirectUrl = new URL('/auth/signin', request.url)
     redirectUrl.searchParams.set('redirectedFrom', request.nextUrl.pathname)
     return NextResponse.redirect(redirectUrl)
   }
   
   // If trying to access auth route while already authenticated, redirect to home
-  if (isAuthRoute && session) {
+  if (isAuthRoute && isAuthenticated) {
     return NextResponse.redirect(new URL('/', request.url))
   }
   

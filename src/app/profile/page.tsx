@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import AuthGuard from '@/components/AuthGuard'
 
 function ProfileContent() {
-  const { user } = useAuth()
+  const { user, provider } = useAuth()
   const [remainingPlays, setRemainingPlays] = useState<number>(0)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
@@ -74,7 +74,10 @@ function ProfileContent() {
               <span className="font-medium">Email:</span> {user?.email}
             </p>
             <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
-              <span className="font-medium">Account created:</span> {new Date(user?.created_at || '').toLocaleDateString()}
+              <span className="font-medium">Name:</span> {user?.name || 'Not provided'}
+            </p>
+            <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
+              <span className="font-medium">Sign-in method:</span> {provider === 'github' ? 'GitHub' : 'Email/Password'}
             </p>
           </div>
         </div>

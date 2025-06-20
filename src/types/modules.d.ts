@@ -28,9 +28,17 @@ declare module '@/lib/auth' {
 }
 
 declare module '@/hooks/useAuth' {
+  export interface AuthUser {
+    id: string
+    email?: string | null
+    name?: string | null
+    image?: string | null
+  }
+  
   export interface AuthState {
-    user: User | null
+    user: AuthUser | null
     loading: boolean
+    provider?: string
   }
   
   export const useAuth: () => AuthState

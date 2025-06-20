@@ -2,23 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { getUser } from '@/lib/auth'
-import { useEffect, useState } from 'react'
-import { User } from '@supabase/supabase-js'
+import { useAuth } from '@/hooks/useAuth'
 
 export default function AuthNav() {
   const pathname = usePathname()
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const user = await getUser()
-      setUser(user)
-      setLoading(false)
-    }
-    fetchUser()
-  }, [])
+  const { user, loading } = useAuth()
 
   // Don't show auth nav on auth pages
   if (pathname?.startsWith('/auth')) {
@@ -37,11 +25,14 @@ export default function AuthNav() {
     <nav className="flex items-center justify-end p-4">
       {user ? (
         <div className="flex items-center space-x-4">
+          {user.image && (
+            <img src={user.image} alt={user.name || 'User avatar'} className="h-8 w-8 rounded-full" />
+          )}
           <Link 
             href="/profile"
             className="text-sm font-medium text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400"
           >
-            Profile
+            {user.name || user.email}
           </Link>
           <Link 
             href="/auth/signout"
