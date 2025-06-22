@@ -27,23 +27,6 @@ declare module '@/lib/auth' {
   export function getRemainingPlays(): Promise<number>
 }
 
-declare module '@/hooks/useAuth' {
-  export interface AuthUser {
-    id: string
-    email?: string | null
-    name?: string | null
-    image?: string | null
-  }
-  
-  export interface AuthState {
-    user: AuthUser | null
-    loading: boolean
-    provider?: string
-  }
-  
-  export const useAuth: () => AuthState
-}
-
 declare module '@/components/AuthGuard' {
   import { FC } from 'react'
   

@@ -41,19 +41,58 @@ export default function SignUpPage() {
     setLoading(true)
     setError(null)
 
-    const res = await fetch('/api/auth/verify-otp-and-register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, token: otp, password, name }),
-    })
+    try {
+      console.log('Starting signup process...')
+      
+      const res = await fetch('/api/auth/verify-otp-and-register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, token: otp, password, name }),
+      })
 
-    if (res.ok) {
-      router.push('/auth/signin?message=Signup successful! Please sign in.')
-    } else {
-      const { error } = await res.json()
-      setError(error || 'Sign up failed. The code may be incorrect or expired.')
+      const data = await res.json()
+      console.log('API response:', data)
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Sign up failed.')
+      }
+
+      console.log('OTP verification successful, calling auto-signin API...')
+      console.log('Session data:', data.session)
+
+      // Call our custom auto-signin API
+      const signInRes = await fetch('/api/auth/auto-signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: data.session.access_token,
+          refreshToken: data.session.refresh_token,
+        }),
+      })
+
+      const signInData = await signInRes.json()
+      console.log('Auto-signin response:', signInData)
+
+      if (!signInRes.ok) {
+        throw new Error(signInData.error || 'Auto signin failed')
+      }
+
+      console.log('Auto-signin successful, dispatching event and redirecting...')
+      
+      // Dispatch a custom event to notify other parts of the app (like AuthNav) to update.
+      window.dispatchEvent(new Event('auth-change'));
+
+      // Redirect to home page. No delay needed.
+      router.push('/')
+      router.refresh()
+
+    } catch (err) {
+      const error = err as Error
+      console.error('Signup error:', error)
+      setError(error.message || 'An unexpected error occurred.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
@@ -152,7 +191,7 @@ export default function SignUpPage() {
                 disabled={loading || otp.length < 6}
                 className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
               >
-                {loading ? 'Verifying...' : 'Create Account'}
+                {loading ? 'Verifying...' : 'Create Account & Sign In'}
               </button>
             </div>
           </form>

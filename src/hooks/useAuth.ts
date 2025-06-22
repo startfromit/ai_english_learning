@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useSession } from 'next-auth/react'
+import { useEffect, useState, useCallback } from 'react'
 
 type AuthUser = {
   id: string
@@ -19,34 +18,40 @@ type AuthState = {
 export const useAuth = (): AuthState => {
   const [state, setState] = useState<AuthState>({
     user: null,
-    loading: true
+    loading: true,
   })
-  
-  // NextAuth session
-  const { data: session, status } = useSession()
+
+  const checkAuth = useCallback(async () => {
+    // We don't set loading to true here on re-checks to avoid UI flickering.
+    // Loading is only true on the initial mount.
+    try {
+      const response = await fetch('/api/auth/check-session')
+      if (!response.ok) throw new Error('Session check failed')
+
+      const { user } = await response.json()
+
+      if (user) {
+        setState({ user, loading: false, provider: 'custom' })
+      } else {
+        setState({ user: null, loading: false, provider: 'none' })
+      }
+    } catch (error) {
+      console.error('Error checking auth status:', error)
+      setState({ user: null, loading: false, provider: 'none' })
+    }
+  }, [])
 
   useEffect(() => {
-    if (status === 'loading') {
-      setState(prev => ({ ...prev, loading: true }))
-    } else if (session?.user) {
-      setState({
-        user: {
-          id: session.user.id || '',
-          email: session.user.email,
-          name: session.user.name,
-          image: session.user.image
-        },
-        loading: false,
-        provider: 'nextauth'
-      })
-    } else {
-      setState({
-        user: null,
-        loading: false,
-        provider: 'nextauth'
-      })
+    checkAuth() // Initial check on component mount.
+
+    // Listen for the custom event to re-check auth
+    window.addEventListener('auth-change', checkAuth)
+
+    // Cleanup the listener when the component unmounts
+    return () => {
+      window.removeEventListener('auth-change', checkAuth)
     }
-  }, [session, status])
+  }, [checkAuth])
 
   return state
 }

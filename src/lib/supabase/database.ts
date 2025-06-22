@@ -9,6 +9,32 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      users: {
+        Row: {
+          id: string
+          created_at: string
+          email: string
+          name: string | null
+          provider: string | null
+          email_verified: boolean | null
+        }
+        Insert: {
+          id: string
+          created_at?: string
+          email: string
+          name?: string | null
+          provider?: string | null
+          email_verified?: boolean | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          email?: string
+          name?: string | null
+          provider?: string | null
+          email_verified?: boolean | null
+        }
+      }
       user_usage: {
         Row: {
           user_id: string
@@ -34,13 +60,7 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
-      increment_play_count: {
-        Args: {
-          p_user_id: string
-          p_usage_date: string
-        }
-        Returns: number
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

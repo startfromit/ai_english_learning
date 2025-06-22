@@ -3,10 +3,15 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { signOut } from 'next-auth/react'
 
 export default function AuthNav() {
   const pathname = usePathname()
   const { user, loading } = useAuth()
+
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: '/' })
+  }
 
   // Don't show auth nav on auth pages
   if (pathname?.startsWith('/auth')) {
@@ -34,12 +39,12 @@ export default function AuthNav() {
           >
             {user.name || user.email}
           </Link>
-          <Link 
-            href="/auth/signout"
+          <button
+            onClick={handleSignOut}
             className="text-sm font-medium text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400"
           >
             Sign out
-          </Link>
+          </button>
         </div>
       ) : (
         <div className="flex items-center space-x-4">
