@@ -495,10 +495,10 @@ export default function ArticlePanel() {
       {articleState.sentences.map((s: Sentence, idx: number) => (
         <span
           key={idx}
-          className={`relative group inline align-baseline transition-colors duration-150 p-1 rounded-md ${
+          className={`relative group inline align-baseline transition-all duration-150 p-1 rounded-md ${
             (activeIndex === idx || (isPlayingAll && playingIndex === idx)) 
             ? 'bg-yellow-200/70 dark:bg-yellow-200/20' 
-            : ''
+            : 'hover:border-b hover:border-dashed hover:border-gray-300 dark:hover:border-gray-500 hover:pb-0.5'
           }`}
           style={{
             fontWeight: 400,
@@ -510,7 +510,9 @@ export default function ArticlePanel() {
             if (loadingIndex === null && !isPlayingAll) handleSpeak(s.english, idx);
           }}
         >
-          {s.english}
+          <span className="relative">
+            {s.english}
+          </span>
           {/* loading 动画 */}
           {loadingIndex === idx && (
             <span className="absolute -top-5 right-0 z-50">
