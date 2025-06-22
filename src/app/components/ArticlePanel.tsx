@@ -312,7 +312,7 @@ export default function ArticlePanel() {
   }, [currentVoice, engine, currentSpeed, articleState]);
 
   const renderParagraph = () => (
-    <p className="text-base leading-relaxed font-normal text-gray-700 dark:text-gray-300">
+    <div className="text-base leading-relaxed font-normal text-gray-700 dark:text-gray-300">
       {articleState.sentences.map((s: Sentence, idx: number) => (
         <span
           key={idx}
@@ -380,7 +380,7 @@ export default function ArticlePanel() {
           </AnimatePresence>
         </span>
       ))}
-    </p>
+    </div>
   );
 
   // Support custom topics and random generation
