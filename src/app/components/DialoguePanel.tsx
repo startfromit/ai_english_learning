@@ -22,6 +22,8 @@ interface Dialogue {
 
 interface DialoguePanelProps {
   dialogue: Dialogue;
+  isPlayingAll?: boolean;
+  playingIndex?: number | null;
 }
 
 // Supported voices for different genders
@@ -30,7 +32,11 @@ const VOICES = {
   female: 'en-US-CoraMultilingualNeural'
 };
 
-const DialoguePanel: React.FC<DialoguePanelProps> = ({ dialogue }) => {
+const DialoguePanel: React.FC<DialoguePanelProps> = ({ 
+  dialogue, 
+  isPlayingAll = false, 
+  playingIndex = null 
+}) => {
   const [showChinese, setShowChinese] = useState<{ [key: number]: boolean }>({});
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -134,10 +140,14 @@ const DialoguePanel: React.FC<DialoguePanelProps> = ({ dialogue }) => {
                   </div>
                   
                   {/* 消息气泡 */}
-                  <div className={`rounded-lg p-3 ${
+                  <div className={`rounded-lg p-3 transition-all duration-200 ${
                     message.speaker === dialogue.participants[0]
-                      ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                      : 'bg-green-500 text-white'
+                      ? isPlayingAll && playingIndex === index
+                        ? 'bg-yellow-200 dark:bg-yellow-200/20 text-gray-800 dark:text-gray-200 shadow-lg'
+                        : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                      : isPlayingAll && playingIndex === index
+                        ? 'bg-yellow-300 dark:bg-yellow-300/20 text-gray-800 dark:text-gray-200 shadow-lg'
+                        : 'bg-green-500 text-white'
                   } shadow-sm`}>
                     <div className="text-sm font-medium mb-1">{message.english}</div>
                     <AnimatePresence>
@@ -162,7 +172,7 @@ const DialoguePanel: React.FC<DialoguePanelProps> = ({ dialogue }) => {
                   <div className={`flex items-center gap-2 mt-1 ${message.speaker === dialogue.participants[0] ? 'justify-start' : 'justify-end'}`}>
                     <button
                       onClick={() => handleSpeak(message.english, index, message.gender)}
-                      disabled={loadingIndex !== null}
+                      disabled={loadingIndex !== null || isPlayingAll}
                       className="p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-50"
                       title="播放发音"
                     >
@@ -176,7 +186,8 @@ const DialoguePanel: React.FC<DialoguePanelProps> = ({ dialogue }) => {
                     </button>
                     <button
                       onClick={() => toggleChinese(index)}
-                      className="p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                      disabled={isPlayingAll}
+                      className="p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-50"
                       title={showChinese[index] ? "隐藏中文" : "显示中文"}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

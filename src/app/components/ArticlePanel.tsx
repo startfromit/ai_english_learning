@@ -149,8 +149,20 @@ export default function ArticlePanel() {
   const [showChineseGlobal, setShowChineseGlobal] = useState(false)
   const [showChineseIndex, setShowChineseIndex] = useState<number | null>(null)
   const [customTopic, setCustomTopic] = useState('');
-  const [contentType, setContentType] = useState<'article' | 'dialogue'>('article');
-  const [dialogueStyle, setDialogueStyle] = useState<'casual' | 'business' | 'social'>('casual');
+  const [contentType, setContentType] = useState<'article' | 'dialogue'>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('contentType');
+      return (cached === 'article' || cached === 'dialogue') ? cached : 'article';
+    }
+    return 'article';
+  });
+  const [dialogueStyle, setDialogueStyle] = useState<'casual' | 'business' | 'social'>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('dialogueStyle');
+      return (cached === 'casual' || cached === 'business' || cached === 'social') ? cached : 'casual';
+    }
+    return 'casual';
+  });
 
   const [articleState, setArticle] = useState<Article>(article)
   const [dialogueState, setDialogue] = useState<Dialogue>({
@@ -177,6 +189,20 @@ export default function ArticlePanel() {
       }
     }
   }, []);
+
+  // 保存内容类型选择到本地存储
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('contentType', contentType);
+    }
+  }, [contentType]);
+
+  // 保存对话风格选择到本地存储
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dialogueStyle', dialogueStyle);
+    }
+  }, [dialogueStyle]);
 
   // 拼接英文段落
   const englishParagraph = articleState.sentences.map((s: Sentence) => s.english).join(' ');
@@ -791,7 +817,11 @@ export default function ArticlePanel() {
                   </svg>
                 </button>
               </div>
-              <DialoguePanel dialogue={dialogueState} />
+              <DialoguePanel 
+                dialogue={dialogueState} 
+                isPlayingAll={isPlayingAll}
+                playingIndex={playingIndex}
+              />
             </div>
           )}
         </div>
