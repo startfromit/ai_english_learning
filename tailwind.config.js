@@ -9,8 +9,8 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-lato)'],
-        serif: ['var(--font-eb-garamond)'],
+        sans: ['var(--font-sans)'],
+        serif: ['var(--font-serif)'],
       },
       colors: {
         primary: '#2c3e50',

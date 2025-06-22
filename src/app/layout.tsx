@@ -2,7 +2,7 @@
 
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/lib/i18n';
-import { Inter as FontSans } from 'next/font/google'
+import { Inter as FontSans, Lora as FontSerif } from 'next/font/google'
 import './globals.css'
 import { cn } from '@/lib/utils'
 import { AuthProvider } from '../components/AuthProvider'
@@ -13,6 +13,11 @@ import Footer from './components/Footer'
 const fontSans = FontSans({
   subsets: ['latin'],
   variable: '--font-sans',
+})
+
+const fontSerif = FontSerif({
+  subsets: ['latin'],
+  variable: '--font-serif',
 })
 
 export default function RootLayout({
@@ -26,7 +31,8 @@ export default function RootLayout({
         <body
           className={cn(
             'min-h-screen bg-background font-sans antialiased flex flex-col',
-            fontSans.variable
+            fontSans.variable,
+            fontSerif.variable
           )}
         >
           <AuthProvider>

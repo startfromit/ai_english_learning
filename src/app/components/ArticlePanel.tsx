@@ -403,7 +403,7 @@ export default function ArticlePanel() {
   }, [currentVoice, engine, currentSpeed, articleState, dialogueState, contentType]);
 
   const renderParagraph = () => (
-    <div className="text-base leading-relaxed font-normal text-gray-700 dark:text-gray-300">
+    <div className="font-serif text-lg leading-relaxed text-gray-800 dark:text-gray-300 text-left hyphens-auto">
       {articleState.sentences.map((s: Sentence, idx: number) => (
         <span
           key={idx}
