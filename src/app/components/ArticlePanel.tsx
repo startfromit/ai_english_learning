@@ -105,7 +105,8 @@ export default function ArticlePanel() {
   const articleRef = useRef<HTMLDivElement | null>(null)
   const { themeMode, setThemeMode } = useContext(ThemeContext) as { themeMode: 'light' | 'dark', setThemeMode: (mode: 'light' | 'dark') => void }
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null)
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [showTitleChinese, setShowTitleChinese] = useState(false);
   const [showBubbleIndex, setShowBubbleIndex] = useState<number | null>(null)
   const [bubblePos, setBubblePos] = useState<{x: number, y: number, absLeft: number, absTop: number} | null>(null)
   const bubbleTimer = useRef<NodeJS.Timeout | null>(null)
@@ -729,9 +730,20 @@ export default function ArticlePanel() {
           {/* 内容区卡片：标题+短文 */}
           {contentType === 'article' && articleState.sentences.length > 0 && (
             <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-2xl mx-auto mt-8">
-              <h2 className="text-3xl font-serif font-bold text-gray-800 dark:text-white mb-4 text-center">
-                {articleState.title}
-              </h2>
+              <div className="mb-6 text-center">
+                <div
+                  onClick={() => handleSpeak(articleState.title, -1)}
+                  className="inline-block max-w-full cursor-pointer group"
+                >
+                  <h2 className="text-3xl font-serif font-bold text-gray-800 dark:text-white inline group-hover:underline decoration-dashed decoration-gray-400 underline-offset-4 dark:decoration-gray-500">
+                    {articleState.title}
+                    <SpeakerWaveIcon className="w-5 h-5 ml-2 inline opacity-0 group-hover:opacity-70 transition-opacity duration-200" />
+                  </h2>
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {articleState.theme}
+                </div>
+              </div>
               {/* 播放和分享按钮，居中 */}
               <div className="flex justify-center gap-4 mb-6">
                 <button
@@ -766,11 +778,22 @@ export default function ArticlePanel() {
           {contentType === 'dialogue' && dialogueState.messages.length > 0 && (
             <div ref={articleRef} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-2xl mx-auto mt-8 overflow-hidden">
               <div className="p-8 pb-6">
-                <h2 className="text-3xl font-serif font-bold text-gray-800 dark:text-white mb-4 text-center">
-                  {dialogueState.title}
-                </h2>
+                <div className="text-center">
+                  <div
+                    onClick={() => handleSpeak(dialogueState.title, -1)}
+                    className="inline-block max-w-full cursor-pointer group"
+                  >
+                    <h2 className="text-3xl font-serif font-bold text-gray-800 dark:text-white mb-1 inline group-hover:underline decoration-dashed decoration-gray-400 underline-offset-4 dark:decoration-gray-500">
+                      {dialogueState.title}
+                      <SpeakerWaveIcon className="w-5 h-5 ml-2 inline opacity-0 group-hover:opacity-70 transition-opacity duration-200" />
+                    </h2>
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    {dialogueState.topic}
+                  </div>
+                </div>
                 {/* 播放和分享按钮，居中 */}
-                <div className="flex justify-center gap-4">
+                <div className="flex justify-center gap-4 mt-4">
                   <button
                     onClick={handlePlayAll}
                     disabled={loadingIndex !== null}
