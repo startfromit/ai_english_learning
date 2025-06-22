@@ -5,6 +5,7 @@ import { getTTSUrl, TTSEngine } from '../lib/tts'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SpeakerWaveIcon, EyeIcon } from '@heroicons/react/24/outline'
 import { ThemeContext } from './ThemeProvider'
+import TypeIt from "typeit-react";
 
 interface Sentence {
   english: string
@@ -261,6 +262,7 @@ export default function ArticlePanel() {
   const [generating, setGenerating] = useState(false)
   const [customTheme, setCustomTheme] = useState(article.theme)
   const [customLength, setCustomLength] = useState(300);
+  const [placeholder, setPlaceholder] = useState(RANDOM_TOPICS[0]);
   
   // Initialize customLength from localStorage after mount
   useEffect(() => {
@@ -573,6 +575,15 @@ export default function ArticlePanel() {
     }
   }
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const randomIndex = Math.floor(Math.random() * RANDOM_TOPICS.length);
+      setPlaceholder(RANDOM_TOPICS[randomIndex]);
+    }, 5000); // 每5秒切换一个话题
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className={themeMode === 'light' ? 'bg-[#f8f4e9] text-gray-900' : 'bg-[#181c23] text-gray-100 transition-colors duration-300'}>
       <audio ref={audioRef} />
@@ -585,15 +596,29 @@ export default function ArticlePanel() {
               {/* 仅自定义话题输入区 */}
               <div className="flex flex-col gap-2 w-full">
                 <label className="text-sm text-gray-700 dark:text-gray-200">自定义话题：</label>
-                <input
-                  type="text"
-                  className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 w-full bg-white dark:bg-[#23272f] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-300 placeholder-gray-400 dark:placeholder-gray-500"
-                  value={customTopic}
-                  onChange={e => setCustomTopic(e.target.value)}
-                  placeholder="如：人工智能的未来 | 量子计算的应用 ..."
-                  disabled={generating}
-                  style={{ fontStyle: customTopic ? 'normal' : 'italic' }}
-                />
+                <div className="relative w-full">
+                  <TypeIt
+                    key={placeholder}
+                    options={{
+                      strings: [placeholder],
+                      speed: 50,
+                      deleteSpeed: 30,
+                      lifeLike: true,
+                      cursor: false,
+                      breakLines: false,
+                      waitUntilVisible: true,
+                    }}
+                    as="div"
+                    className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"
+                  />
+                  <input
+                    type="text"
+                    value={customTopic}
+                    onChange={(e) => setCustomTopic(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-transparent dark:border-gray-600 dark:focus:ring-indigo-400"
+                    placeholder="" // Keep this empty, TypeIt will be the placeholder
+                  />
+                </div>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {topicSuggests.map(sug => (
                     <button

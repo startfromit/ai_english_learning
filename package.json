@@ -25,6 +25,7 @@
     "next-auth": "^4.24.11",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "typeit-react": "^2.7.8",
     "zod": "^3.25.67"
   },
   "devDependencies": {
