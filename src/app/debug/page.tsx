@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { createClient } from '@/lib/supabase/server';
 
 async function getEnvStatus() {
   const requiredServerEnvs = [
@@ -29,9 +30,36 @@ async function getEnvStatus() {
   return status;
 }
 
+async function testEmailSending() {
+  try {
+    const supabase = createClient();
+    
+    // Test resending verification email
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: 'test@example.com', // This will fail but we can see the error
+      options: {
+        emailRedirectTo: `${process.env.NEXTAUTH_URL}/auth/verify-email`
+      }
+    });
+
+    return {
+      success: !error,
+      error: error?.message || null,
+      code: error?.status || null
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      code: null
+    };
+  }
+}
 
 export default async function DebugPage() {
   const envStatus = await getEnvStatus();
+  const emailTest = await testEmailSending();
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -57,6 +85,45 @@ export default async function DebugPage() {
                   </dd>
                 </div>
               ))}
+            </dl>
+          </div>
+        </div>
+
+        <div className="mt-8 bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="px-4 py-5 sm:px-6">
+            <h3 className="text-lg leading-6 font-medium text-gray-900">
+              Email Sending Test
+            </h3>
+            <p className="mt-1 max-w-2xl text-sm text-gray-500">
+              Testing Supabase email functionality
+            </p>
+          </div>
+          <div className="border-t border-gray-200">
+            <dl>
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Email Test Status</dt>
+                <dd className={`mt-1 text-sm sm:mt-0 sm:col-span-2 ${emailTest.success ? 'text-green-600' : 'text-red-600'}`}>
+                  <code className="bg-gray-100 px-2 py-1 rounded font-bold">
+                    {emailTest.success ? 'SUCCESS' : 'FAILED'}
+                  </code>
+                </dd>
+              </div>
+              {emailTest.error && (
+                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">Error Message</dt>
+                  <dd className="mt-1 text-sm sm:mt-0 sm:col-span-2 text-red-600">
+                    <code className="bg-gray-100 px-2 py-1 rounded">{emailTest.error}</code>
+                  </dd>
+                </div>
+              )}
+              {emailTest.code && (
+                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">Error Code</dt>
+                  <dd className="mt-1 text-sm sm:mt-0 sm:col-span-2 text-red-600">
+                    <code className="bg-gray-100 px-2 py-1 rounded">{emailTest.code}</code>
+                  </dd>
+                </div>
+              )}
             </dl>
           </div>
         </div>
@@ -90,14 +157,33 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=...`}
               </div>
               
               <div>
-                <h4 className="text-sm font-medium text-gray-900">2. Restart the Development Server</h4>
+                <h4 className="text-sm font-medium text-gray-900">2. Check Supabase Email Settings</h4>
+                <p className="text-sm text-gray-600 mt-1">
+                  Go to your Supabase dashboard → Authentication → Email Templates and ensure:
+                </p>
+                <ul className="text-sm text-gray-600 mt-1 list-disc list-inside space-y-1">
+                  <li>Email templates are configured</li>
+                  <li>SMTP settings are properly configured (if using custom SMTP)</li>
+                  <li>Email confirmations are enabled</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-gray-900">3. Check Email Provider</h4>
+                <p className="text-sm text-gray-600 mt-1">
+                  Check your email provider's spam folder. Supabase emails might be filtered as spam.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-gray-900">4. Restart the Development Server</h4>
                 <p className="text-sm text-gray-600 mt-1">
                   After any change to the <code className="bg-gray-100 px-2 py-1 rounded text-xs">.env.local</code> file, you **must** restart the development server. Stop it (Ctrl+C) and run <code className="bg-gray-100 px-2 py-1 rounded text-xs">npm run dev</code> again.
                 </p>
               </div>
 
               <div>
-                <h4 className="text-sm font-medium text-gray-900">3. Check GitHub OAuth App</h4>
+                <h4 className="text-sm font-medium text-gray-900">5. Check GitHub OAuth App</h4>
                 <p className="text-sm text-gray-600 mt-1">
                   Ensure your GitHub OAuth app has the correct callback URL: 
                   <code className="bg-gray-100 px-2 py-1 rounded text-xs ml-2">http://localhost:3000/api/auth/callback/github</code>
@@ -105,7 +191,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=...`}
               </div>
               
               <div>
-                <h4 className="text-sm font-medium text-gray-900">4. Check GitHub Email Privacy</h4>
+                <h4 className="text-sm font-medium text-gray-900">6. Check GitHub Email Privacy</h4>
                 <p className="text-sm text-gray-600 mt-1">
                   Ensure your GitHub email is public. Go to 
                   <a href="https://github.com/settings/emails" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-500 ml-1">

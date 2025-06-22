@@ -21,7 +21,8 @@ export async function POST(request: NextRequest) {
       options: {
         data: {
           name: name || email,
-        }
+        },
+        emailRedirectTo: `${process.env.NEXTAUTH_URL}/auth/verify-email/callback`
       }
     })
 
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest) {
             email: data.user.email,
             name: name || data.user.email,
             provider: 'credentials',
+            email_verified: false, // Mark as unverified initially
             created_at: new Date().toISOString()
           }
         ])
@@ -54,7 +56,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: 'Registration successful. Please check your email to verify your account.',
+        message: 'Registration successful! Please check your email to verify your account before signing in.',
         user: {
           id: data.user.id,
           email: data.user.email,

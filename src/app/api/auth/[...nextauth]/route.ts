@@ -38,6 +38,23 @@ const authOptions: NextAuthOptions = {
           }
 
           if (data.user) {
+            // Check if user's email is verified
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('email_verified')
+              .eq('id', data.user.id)
+              .single()
+
+            if (userError) {
+              console.error('Error checking user verification status:', userError)
+              return null
+            }
+
+            // If user is not verified, return null to prevent login
+            if (!userData?.email_verified) {
+              throw new Error('Please verify your email address before signing in')
+            }
+
             return {
               id: data.user.id,
               email: data.user.email,
@@ -49,7 +66,7 @@ const authOptions: NextAuthOptions = {
           return null
         } catch (error) {
           console.error('Unexpected auth error:', error)
-          return null
+          throw error
         }
       }
     })
@@ -61,6 +78,11 @@ const authOptions: NextAuthOptions = {
         userEmail: user?.email,
         userName: user?.name 
       })
+
+      // GitHub users are automatically verified (they have verified email from GitHub)
+      if (account?.provider === 'github') {
+        console.log('GitHub user - automatically verified')
+      }
 
       // Handle user creation/update in Supabase for both GitHub and email/password
       if (user?.email) {
@@ -97,7 +119,8 @@ const authOptions: NextAuthOptions = {
                   email: user.email,
                   name: user.name,
                   avatar_url: user.image,
-                  provider: account?.provider || 'credentials'
+                  provider: account?.provider || 'credentials',
+                  email_verified: account?.provider === 'github' ? true : false
                 }
               ])
             
