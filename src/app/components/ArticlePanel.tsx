@@ -6,6 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { SpeakerWaveIcon, EyeIcon } from '@heroicons/react/24/outline'
 import { ThemeContext } from './ThemeProvider'
 import TypeIt from "typeit-react";
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
+import LoginModal from './LoginModal';
 
 interface Sentence {
   english: string
@@ -252,6 +255,8 @@ const RANDOM_TOPICS = [
 ];
 
 export default function ArticlePanel() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
   const [showChinese, setShowChinese] = useState(false)
   const [engine, setEngine] = useState<TTSEngine>('azure')
   const [currentVoice, setCurrentVoice] = useState(VOICES[0].value)
@@ -263,6 +268,8 @@ export default function ArticlePanel() {
   const [customTheme, setCustomTheme] = useState(article.theme)
   const [customLength, setCustomLength] = useState(300);
   const [placeholder, setPlaceholder] = useState(RANDOM_TOPICS[0]);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginModalMessage, setLoginModalMessage] = useState('请先登录再使用此功能');
   
   // Initialize customLength from localStorage after mount
   useEffect(() => {
@@ -324,6 +331,16 @@ export default function ArticlePanel() {
   }
 
   const handleSpeak = async (text: string, idx: number) => {
+    if (loading) {
+      setLoginModalMessage('正在加载用户信息，请稍后再试');
+      setShowLoginModal(true);
+      return;
+    }
+    if (!user) {
+      setLoginModalMessage('请先登录再使用此功能');
+      setShowLoginModal(true);
+      return;
+    }
     if (loadingIndex !== null) return; // 禁止并发TTS
     setLoadingIndex(idx);
     const cacheKey = text + currentVoice + engine + currentSpeed;
@@ -392,6 +409,16 @@ export default function ArticlePanel() {
 
   // 顺序播放所有句子
   const handlePlayAll = async () => {
+    if (loading) {
+      setLoginModalMessage('正在加载用户信息，请稍后再试');
+      setShowLoginModal(true);
+      return;
+    }
+    if (!user) {
+      setLoginModalMessage('请先登录再使用此功能');
+      setShowLoginModal(true);
+      return;
+    }
     if (isPlayingAll) {
       // 停止播放
       playAllAbortRef.current.aborted = true;
@@ -530,6 +557,16 @@ export default function ArticlePanel() {
 
   // 支持自定义话题和随机生成
   const handleGenerate = async (mode: 'custom' | 'random') => {
+    if (loading) {
+      setLoginModalMessage('正在加载用户信息，请稍后再试');
+      setShowLoginModal(true);
+      return;
+    }
+    if (!user) {
+      setLoginModalMessage('请先登录再使用此功能');
+      setShowLoginModal(true);
+      return;
+    }
     setGenerating(true);
     try {
       const body: any = { length: customLength };
@@ -587,6 +624,11 @@ export default function ArticlePanel() {
   return (
     <div className={themeMode === 'light' ? 'bg-[#f8f4e9] text-gray-900' : 'bg-[#181c23] text-gray-100 transition-colors duration-300'}>
       <audio ref={audioRef} />
+      <LoginModal 
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        message={loginModalMessage}
+      />
       <div className="flex flex-col lg:flex-row gap-8 items-start justify-center w-full max-w-7xl mx-auto">
         {/* 左侧主区 */}
         <div className="flex-1 flex flex-col items-center">

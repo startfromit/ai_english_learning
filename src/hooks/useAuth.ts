@@ -48,17 +48,19 @@ export const useAuth = (): AuthState => {
             provider: 'supabase'
           })
         } else {
-          setState(prev => ({
-            ...prev,
-            loading: false
-          }))
+          setState({
+            user: null,
+            loading: false,
+            provider: 'supabase'
+          })
         }
       } catch (error) {
         console.error('Error fetching Supabase user:', error)
-        setState(prev => ({
-          ...prev,
-          loading: false
-        }))
+        setState({
+          user: null,
+          loading: false,
+          provider: 'supabase'
+        })
       }
     }
     

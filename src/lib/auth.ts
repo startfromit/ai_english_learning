@@ -1,6 +1,7 @@
 import { createClient } from './supabase/client'
 import { User } from '@supabase/supabase-js'
 import { Database } from './supabase/database'
+import { signOut as nextAuthSignOut } from 'next-auth/react'
 
 type UserUsage = Database['public']['Tables']['user_usage']['Row']
 
@@ -16,8 +17,14 @@ export async function getUser(): Promise<User | null> {
 }
 
 export async function signOut() {
+  // Sign out from both NextAuth and Supabase
   const supabase = createClient()
-  return await supabase.auth.signOut()
+  
+  // Sign out from NextAuth
+  await nextAuthSignOut({ redirect: false })
+  
+  // Sign out from Supabase
+  await supabase.auth.signOut()
 }
 
 export async function canPlayAudio(): Promise<{ canPlay: boolean; remaining: number }> {
