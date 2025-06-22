@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SpeakerWaveIcon } from '@heroicons/react/24/outline';
 import { getTTSUrl, TTSEngine } from '../lib/tts';
@@ -41,6 +41,17 @@ const DialoguePanel: React.FC<DialoguePanelProps> = ({
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioCache = useRef<Map<string, string | undefined>>(new Map());
+  const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Auto-scroll to the currently playing message
+  useEffect(() => {
+    if (isPlayingAll && playingIndex !== null && messageRefs.current[playingIndex]) {
+      messageRefs.current[playingIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [playingIndex, isPlayingAll]);
 
   if (!dialogue.messages || dialogue.messages.length === 0) {
     return null;
@@ -104,14 +115,8 @@ const DialoguePanel: React.FC<DialoguePanelProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-2xl mx-auto mt-8 overflow-hidden">
+    <div className="w-full">
       <audio ref={audioRef} />
-      
-      {/* 对话头部 */}
-      <div className="bg-green-500 text-white p-4 text-center">
-        <h3 className="text-lg font-semibold">{dialogue.title}</h3>
-        <p className="text-sm opacity-90 mt-1">{dialogue.topic}</p>
-      </div>
       
       {/* 对话内容区域 */}
       <div className="bg-gray-100 dark:bg-gray-900 p-4 h-96 overflow-y-auto">
@@ -119,6 +124,7 @@ const DialoguePanel: React.FC<DialoguePanelProps> = ({
           {dialogue.messages.map((message, index) => (
             <AnimatePresence key={index}>
               <motion.div
+                ref={el => { messageRefs.current[index] = el; }}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
