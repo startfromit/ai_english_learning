@@ -110,6 +110,7 @@ export default function ArticlePanel() {
   const articleRef = useRef<HTMLDivElement | null>(null)
   const { themeMode, setThemeMode } = useContext(ThemeContext) as { themeMode: 'light' | 'dark', setThemeMode: (mode: 'light' | 'dark') => void }
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null)
   const [showBubbleIndex, setShowBubbleIndex] = useState<number | null>(null)
   const [bubblePos, setBubblePos] = useState<{x: number, y: number, absLeft: number, absTop: number} | null>(null)
   const bubbleTimer = useRef<NodeJS.Timeout | null>(null)
@@ -192,15 +193,22 @@ export default function ArticlePanel() {
 
   // 只保留一块英文段落展示，采用流式p标签+span方案，悬浮时句子加若有若无的虚线下划线，点击即可朗读，气泡跟随鼠标，消失有延迟
   const handleMouseEnter = (idx: number) => {
-    setActiveIndex(idx);
+    setHoverIndex(idx);
     setShowBubbleIndex(idx);
   };
   const handleMouseLeave = () => {
-    setShowBubbleIndex(null);
+    // 延迟隐藏气泡，避免鼠标快速移动时气泡闪烁
+    if (bubbleTimer.current) {
+      clearTimeout(bubbleTimer.current);
+    }
+    bubbleTimer.current = setTimeout(() => {
+      setShowBubbleIndex(null);
+      setHoverIndex(null);
+    }, 150); // 150ms延迟
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLSpanElement>, idx: number) => {
-    if (activeIndex === idx) {
+    if (hoverIndex === idx) {
       if (bubbleTimer.current) {
         clearTimeout(bubbleTimer.current);
         bubbleTimer.current = null;
@@ -309,8 +317,10 @@ export default function ArticlePanel() {
         <span
           key={idx}
           className={`relative group inline align-baseline transition-all duration-150 p-1 rounded-md ${
-            (activeIndex === idx || (isPlayingAll && playingIndex === idx)) 
+            (isPlayingAll && playingIndex === idx) 
             ? 'bg-yellow-200/70 dark:bg-yellow-200/20' 
+            : hoverIndex === idx
+            ? 'border-b border-dashed border-gray-300 dark:border-gray-500 pb-0.5'
             : 'hover:border-b hover:border-dashed hover:border-gray-300 dark:hover:border-gray-500 hover:pb-0.5'
           }`}
           style={{
@@ -318,6 +328,9 @@ export default function ArticlePanel() {
             cursor: loadingIndex !== null ? 'not-allowed' : isPlayingAll ? 'not-allowed' : 'pointer',
             pointerEvents: (loadingIndex !== null && loadingIndex !== idx) || isPlayingAll ? 'none' : 'auto',
           }}
+          onMouseEnter={() => handleMouseEnter(idx)}
+          onMouseLeave={handleMouseLeave}
+          onMouseMove={(e) => handleMouseMove(e, idx)}
           onClick={e => {
             e.stopPropagation();
             if (loadingIndex === null && !isPlayingAll) handleSpeak(s.english, idx);
