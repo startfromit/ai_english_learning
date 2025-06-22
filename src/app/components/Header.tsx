@@ -10,7 +10,7 @@ function ThemeToggle() {
     <button
       onClick={() => setThemeMode(themeMode === 'light' ? 'dark' : 'light')}
       className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors mr-2"
-      title={themeMode === 'light' ? '切换深色模式' : '切换浅色模式'}
+      title={themeMode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
     >
       {themeMode === 'light' ? (
         // 太阳图标

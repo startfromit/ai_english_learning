@@ -26,20 +26,20 @@ interface Article {
   }[]
 }
 
-// 支持两个声音
+// Supported voices
 const VOICES = [
-  { label: '美音温柔女声', value: 'en-US-CoraMultilingualNeural' },
-  { label: '美音温柔男声', value: 'en-US-AndrewMultilingualNeural' },
+  { label: 'US English Female', value: 'en-US-CoraMultilingualNeural' },
+  { label: 'US English Male', value: 'en-US-AndrewMultilingualNeural' },
 ]
 
 const SPEEDS = [
-  { label: '慢', value: 'slow' },
-  { label: '正常', value: 'normal' },
-  { label: '快', value: 'fast' },
+  { label: 'Slow', value: 'slow' },
+  { label: 'Normal', value: 'normal' },
+  { label: 'Fast', value: 'fast' },
 ]
 
 const ENGINES: { label: string; value: TTSEngine }[] = [
-  { label: '微软Azure', value: 'azure' },
+  { label: 'Microsoft Azure', value: 'azure' },
   { label: 'TTSMaker', value: 'ttsmaker' },
 ]
 
@@ -557,7 +557,7 @@ export default function ArticlePanel() {
     </p>
   );
 
-  // 支持自定义话题和随机生成
+  // Support custom topics and random generation
   const handleGenerate = async (mode: 'custom' | 'random') => {
     if (loading) {
       setLoginModalMessage('正在加载用户信息，请稍后再试');
@@ -678,10 +678,10 @@ export default function ArticlePanel() {
                 </div>
                 <span className="text-xs text-gray-400 mt-1">可以输入具体话题，如"{topicSuggests[0]}"</span>
               </div>
-              {/* 长度+按钮 */}
+              {/* Length + Buttons */}
               <div className="flex flex-col gap-2 w-full mt-2">
                 <div className="flex items-center whitespace-nowrap gap-2 w-full">
-                  <label className="text-sm text-gray-700 dark:text-gray-200 mr-2 whitespace-nowrap">长度：</label>
+                  <label className="text-sm text-gray-700 dark:text-gray-200 mr-2 whitespace-nowrap">Length:</label>
                   <input
                     type="range"
                     min={100}
@@ -701,14 +701,14 @@ export default function ArticlePanel() {
                     onClick={() => handleGenerate('custom')}
                     disabled={generating || !customTopic.trim()}
                   >
-                    {generating ? '生成中...' : '生成短文'}
+                    {generating ? 'Generating...' : 'Generate Article'}
                   </button>
                   <button
                     className="btn btn-secondary shadow-md px-6 py-2 text-base rounded-lg font-semibold bg-gray-200 text-gray-700 hover:bg-indigo-50 transition disabled:opacity-60 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
                     onClick={() => handleGenerate('random')}
                     disabled={generating}
                   >
-                    随机生成
+                    Random Topic
                   </button>
                 </div>
               </div>

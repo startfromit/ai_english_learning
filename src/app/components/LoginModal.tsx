@@ -15,8 +15,8 @@ interface LoginModalProps {
 export default function LoginModal({ 
   isOpen, 
   onClose, 
-  title = "需要登录", 
-  message = "请先登录再使用此功能" 
+  title = "Login Required", 
+  message = "Please sign in to continue" 
 }: LoginModalProps) {
   const router = useRouter()
 
@@ -85,13 +85,13 @@ export default function LoginModal({
                   onClick={handleLogin}
                   className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                 >
-                  登录
+                  Sign In
                 </button>
                 <button
                   onClick={handleSignup}
                   className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors"
                 >
-                  注册
+                  Sign Up
                 </button>
               </div>
             </div>
