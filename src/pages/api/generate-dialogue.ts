@@ -127,6 +127,7 @@ Requirements:
 - Include common expressions and idioms where appropriate
 - Assign gender to each speaker: Alex (male), Sarah (female)
 - Provide a Chinese translation for the dialogue title.
+- The conversation should start naturally and get straight to the topic. Avoid generic greetings like "Hello, how are you?".
 
 Output the following JSON structure:
 {
@@ -136,11 +137,11 @@ Output the following JSON structure:
   "participants": ["${participantNames[0]}", "${participantNames[1]}"],
   "messages": [
     {
-      "speaker": "${participantNames[0]}",
-      "english": "Hello! How are you doing today?",
-      "chinese": "你好！你今天怎么样？",
-      "timestamp": "10:30 AM",
-      "gender": "male"
+      "speaker": "...",
+      "english": "...",
+      "chinese": "...",
+      "timestamp": "...",
+      "gender": "..."
     },
     ...
   ]
