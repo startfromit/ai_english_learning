@@ -12,6 +12,7 @@ import LoginModal from './LoginModal';
 import DialoguePanel from './DialoguePanel';
 import { RANDOM_TOPICS, getRandomTopics } from '@/lib/topics';
 import { useTranslation } from 'react-i18next'
+import { getRandomArticle, getRandomDialogue } from '@/lib/content'
 
 interface Sentence {
   english: string
@@ -69,29 +70,6 @@ function getAzureSsml(text: string, voice: string, speed: string) {
   return `<speak version='1.0' xml:lang='en-US'><voice name='${voice}'><prosody rate='${rate}'>${text}</prosody></voice></speak>`;
 }
 
-// 模拟数据
-const article: Article = {
-  title: "The Quantum Revolution",
-  theme: "Technology",
-  sentences: [
-    {
-      english: "Quantum computing represents a paradigm shift in computational power.",
-      chinese: "量子计算代表了计算能力的范式转变。"
-    },
-    {
-      english: "Unlike classical computers that use bits, quantum computers use qubits.",
-      chinese: "与使用比特的经典计算机不同，量子计算机使用量子比特。"
-    }
-  ],
-  vocabulary: [
-    {
-      word: "paradigm",
-      meaning: "a typical example or pattern of something",
-      example: "This discovery represents a paradigm shift in our understanding of physics."
-    }
-  ]
-}
-
 export default function ArticlePanel() {
   const { t } = useTranslation();
   const { user, loading } = useAuth();
@@ -104,7 +82,6 @@ export default function ArticlePanel() {
   const audioCache = useRef<Map<string, string | undefined>>(new Map())
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [generating, setGenerating] = useState(false)
-  const [customTheme, setCustomTheme] = useState(article.theme)
   const [customLength, setCustomLength] = useState(300);
   const [placeholder, setPlaceholder] = useState(RANDOM_TOPICS[0]);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -150,13 +127,16 @@ export default function ArticlePanel() {
     return 'casual';
   });
 
-  const [articleState, setArticle] = useState<Article>(article)
-  const [dialogueState, setDialogue] = useState<Dialogue>({
-    title: '',
-    topic: '',
-    participants: [],
-    messages: []
-  })
+  // 使用预制内容初始化
+  const [articleState, setArticle] = useState<Article>(() => {
+    const defaultArticle = getRandomArticle();
+    return defaultArticle;
+  });
+  const [dialogueState, setDialogue] = useState<Dialogue>(() => {
+    const defaultDialogue = getRandomDialogue();
+    return defaultDialogue;
+  });
+  
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem('lastArticle');
