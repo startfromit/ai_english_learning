@@ -119,7 +119,7 @@ const DialoguePanel: React.FC<DialoguePanelProps> = ({
       <audio ref={audioRef} />
       
       {/* 对话内容区域 */}
-      <div className="bg-gray-100 dark:bg-gray-900 p-4 h-96 overflow-y-auto">
+      <div className="bg-gray-100 dark:bg-gray-900 p-4 overflow-y-auto" style={{ height: 'calc(100vh - 420px)' }}>
         <div className="space-y-4">
           {dialogue.messages.map((message, index) => (
             <AnimatePresence key={index}>

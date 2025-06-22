@@ -621,20 +621,22 @@ export default function ArticlePanel() {
                       <div className="flex flex-col gap-2 w-full">
                         <label className="text-sm text-gray-700 dark:text-gray-200">{t('customTopic')}</label>
                         <div className="relative w-full">
-                          <TypeIt
-                            key={placeholder}
-                            options={{
-                              strings: [placeholder],
-                              speed: 50,
-                              deleteSpeed: 30,
-                              lifeLike: true,
-                              cursor: false,
-                              breakLines: false,
-                              waitUntilVisible: true,
-                            }}
-                            as="div"
-                            className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"
-                          />
+                          {!customTopic && (
+                            <TypeIt
+                              key={placeholder}
+                              options={{
+                                strings: [placeholder],
+                                speed: 50,
+                                deleteSpeed: 30,
+                                lifeLike: true,
+                                cursor: false,
+                                breakLines: false,
+                                waitUntilVisible: true,
+                              }}
+                              as="div"
+                              className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"
+                            />
+                          )}
                           <input
                             type="text"
                             value={customTopic}

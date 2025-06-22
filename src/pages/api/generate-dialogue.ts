@@ -128,10 +128,11 @@ Requirements:
 - Assign gender to each speaker: Alex (male), Sarah (female)
 - Provide a Chinese translation for the dialogue title.
 - The conversation should start naturally and get straight to the topic. Avoid generic greetings like "Hello, how are you?".
+- The "title" should be a concise and appropriate English title for the given topic.
 
 Output the following JSON structure:
 {
-  "title": "A conversation about [topic]",
+  "title": "A conversation about [English translation of the topic]",
   "title_chinese": "关于[话题]的对话",
   "topic": "${finalTopic}",
   "participants": ["${participantNames[0]}", "${participantNames[1]}"],
