@@ -715,7 +715,7 @@ export default function ArticlePanel() {
             </div>
           </div>
           {/* 内容区卡片：标题+短文 */}
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-2xl mx-auto">
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-2xl mx-auto mt-8">
             <h2 className="text-3xl font-serif font-bold text-gray-800 dark:text-white mb-4 text-center">
               {articleState.title}
             </h2>
