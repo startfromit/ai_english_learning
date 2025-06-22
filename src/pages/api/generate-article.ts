@@ -29,20 +29,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     llm = new ChatOpenAI({
       apiKey: process.env.OPENAI_API_KEY,
       model: "gpt-3.5-turbo",
-      temperature: 0.9,
+      temperature: 1,
     });
   } else if (provider === 'ollama') {
     llm = new Ollama({
       model: process.env.OLLAMA_MODEL || "qwen2.5:7b",
       baseUrl: process.env.OLLAMA_API_BASE || 'http://localhost:11434',
-      temperature: 0.9,
+      temperature: 1,
       maxRetries: 2,
     });
   } else if (provider === 'deepseek') {
     llm = new ChatOpenAI({
       apiKey: process.env.DEEPSEEK_API_KEY,
       model: "deepseek-chat",
-      temperature: 0.9,
+      temperature: 1,
       // @ts-expect-error
       baseURL: "https://api.deepseek.com/v1",
     });
@@ -231,7 +231,55 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   ];
   let finalTopic = topic;
   if (!finalTopic) {
-    finalTopic = RANDOM_TOPICS[Math.floor(Math.random() * RANDOM_TOPICS.length)];
+    // 让LLM生成一个真正随机的话题，而不是从固定列表中选择
+    const randomThemes = [
+      'technology and innovation', 'environmental issues', 'social media and communication', 
+      'education and learning', 'health and wellness', 'travel and culture', 'food and cooking',
+      'sports and fitness', 'arts and creativity', 'business and entrepreneurship', 
+      'science and discovery', 'relationships and psychology', 'fashion and lifestyle',
+      'music and entertainment', 'politics and society', 'nature and wildlife',
+      'space and astronomy', 'history and heritage', 'language and communication',
+      'work and career', 'family and parenting', 'friendship and social life',
+      'personal development', 'global issues', 'local community', 'hobbies and interests',
+      'transportation and mobility', 'architecture and design', 'literature and writing',
+      'philosophy and ethics', 'economics and finance', 'medicine and healthcare',
+      'agriculture and farming', 'energy and sustainability', 'crime and justice',
+      'religion and spirituality', 'gender and equality', 'aging and retirement',
+      'youth and adolescence', 'disability and inclusion', 'immigration and diversity'
+    ];
+    
+    const randomTheme = randomThemes[Math.floor(Math.random() * randomThemes.length)];
+    const randomPerspective = ['positive', 'negative', 'neutral', 'controversial', 'innovative', 'traditional'][Math.floor(Math.random() * 6)];
+    const randomAudience = ['teenagers', 'young adults', 'students', 'professionals', 'parents', 'seniors'][Math.floor(Math.random() * 6)];
+    
+    const topicPrompt = `Generate a unique, engaging topic for English speaking practice and essay writing. 
+
+Requirements:
+- Theme: ${randomTheme}
+- Perspective: ${randomPerspective}
+- Target audience: ${randomAudience}
+- Must be different from common topics like "social media effects" or "climate change"
+- Should be specific and thought-provoking
+- Suitable for English learners
+- Return only the topic title in English, no quotes or extra text
+
+Examples of what NOT to generate:
+- "The impact of social media on mental health"
+- "Climate change and sustainability" 
+- "Artificial intelligence in daily life"
+
+Generate something unique and unexpected:`;
+    
+    try {
+      const topicResult = await llm.invoke([{ role: "user", content: topicPrompt }]);
+      const topicText = typeof topicResult === 'string' ? topicResult : topicResult.content.toString();
+      finalTopic = topicText.replace(/["'`]/g, '').trim();
+      console.log('Generated random topic:', finalTopic);
+    } catch (error) {
+      console.error('Failed to generate random topic, falling back to fixed list:', error);
+      // 如果LLM生成失败，回退到固定列表
+      finalTopic = RANDOM_TOPICS[Math.floor(Math.random() * RANDOM_TOPICS.length)];
+    }
   }
 
   const prompt = [
