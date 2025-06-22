@@ -22,6 +22,7 @@ interface DialogueMessage {
   english: string
   chinese: string
   timestamp: string
+  gender: 'male' | 'female'
 }
 
 interface Dialogue {
@@ -41,6 +42,22 @@ interface Article {
     example: string
   }[]
 }
+
+// 对话风格定义
+const DIALOGUE_STYLES = {
+  casual: {
+    name: '日常轻松',
+    description: '朋友间的轻松聊天，话题简单有趣'
+  },
+  business: {
+    name: '商务职场',
+    description: '工作场合的专业对话，话题正式实用'
+  },
+  social: {
+    name: '社交聚会',
+    description: '社交场合的友好交流，话题广泛有趣'
+  }
+};
 
 // Supported voices
 const VOICES = [
@@ -133,6 +150,7 @@ export default function ArticlePanel() {
   const [showChineseIndex, setShowChineseIndex] = useState<number | null>(null)
   const [customTopic, setCustomTopic] = useState('');
   const [contentType, setContentType] = useState<'article' | 'dialogue'>('article');
+  const [dialogueStyle, setDialogueStyle] = useState<'casual' | 'business' | 'social'>('casual');
 
   const [articleState, setArticle] = useState<Article>(article)
   const [dialogueState, setDialogue] = useState<Dialogue>({
@@ -282,51 +300,102 @@ export default function ArticlePanel() {
     setIsPlayingAll(true);
     setPlayingIndex(0);
 
-    // 1. 生成所有音频Promise（有缓存的直接resolve，没有缓存的并发TTS）
-    const audioPromises = articleState.sentences.map((s, i) => {
-      const cacheKey = s.english + currentVoice + engine + currentSpeed;
-      const cached = getAudioCache(cacheKey);
-      if (cached) return Promise.resolve(cached);
-      let ttsText = s.english;
-      let voice = currentVoice;
-      let extra: any = {};
-      if (engine === 'azure') {
-        ttsText = getAzureSsml(s.english, currentVoice, currentSpeed);
-        extra.ssml = true;
+    if (contentType === 'dialogue') {
+      // 对话播放逻辑
+      const messages = dialogueState.messages;
+      if (!messages || messages.length === 0) {
+        setIsPlayingAll(false);
+        setPlayingIndex(null);
+        return;
       }
-      return getTTSUrl({ text: ttsText, voice, engine, ...extra }).then(url => {
-        if (url) setAudioCache(cacheKey, url);
-        return url || '';
-      });
-    });
 
-    // 2. 顺序播放（边播边等）
-    for (let i = 0; i < audioPromises.length; i++) {
-      if (playAllAbortRef.current.aborted) break;
-      setPlayingIndex(i);
-      const url = await audioPromises[i];
-      if (audioRef.current) {
-        audioRef.current.src = typeof url === 'string' ? url : '';
-        audioRef.current.play();
-        try {
-          await new Promise<void>((resolve, reject) => {
-            const onEnded = () => {
-              audioRef.current?.removeEventListener('ended', onEnded);
-              audioRef.current?.removeEventListener('pause', onPause);
-              resolve();
-            };
-            const onPause = () => {
-              audioRef.current?.removeEventListener('ended', onEnded);
-              audioRef.current?.removeEventListener('pause', onPause);
-              resolve();
-            };
-            audioRef.current?.addEventListener('ended', onEnded);
-            audioRef.current?.addEventListener('pause', onPause);
-            audioRef.current?.play();
-          });
-        } catch {}
+      // 1. 生成所有音频Promise
+      const audioPromises = messages.map((msg, i) => {
+        const voice = msg.gender === 'male' ? 'en-US-AndrewMultilingualNeural' : 'en-US-CoraMultilingualNeural';
+        const cacheKey = msg.english + voice + 'azure' + 'normal';
+        const cached = getAudioCache(cacheKey);
+        if (cached) return Promise.resolve(cached);
+        return getTTSUrl({ text: msg.english, voice, engine: 'azure' }).then(url => {
+          if (url) setAudioCache(cacheKey, url);
+          return url || '';
+        });
+      });
+
+      // 2. 顺序播放
+      for (let i = 0; i < audioPromises.length; i++) {
+        if (playAllAbortRef.current.aborted) break;
+        setPlayingIndex(i);
+        const url = await audioPromises[i];
+        if (audioRef.current) {
+          audioRef.current.src = typeof url === 'string' ? url : '';
+          audioRef.current.play();
+          try {
+            await new Promise<void>((resolve, reject) => {
+              const onEnded = () => {
+                audioRef.current?.removeEventListener('ended', onEnded);
+                audioRef.current?.removeEventListener('pause', onPause);
+                resolve();
+              };
+              const onPause = () => {
+                audioRef.current?.removeEventListener('ended', onEnded);
+                audioRef.current?.removeEventListener('pause', onPause);
+                resolve();
+              };
+              audioRef.current?.addEventListener('ended', onEnded);
+              audioRef.current?.addEventListener('pause', onPause);
+              audioRef.current?.play();
+            });
+          } catch {}
+        }
+      }
+    } else {
+      // 短文播放逻辑
+      const audioPromises = articleState.sentences.map((s, i) => {
+        const cacheKey = s.english + currentVoice + engine + currentSpeed;
+        const cached = getAudioCache(cacheKey);
+        if (cached) return Promise.resolve(cached);
+        let ttsText = s.english;
+        let voice = currentVoice;
+        let extra: any = {};
+        if (engine === 'azure') {
+          ttsText = getAzureSsml(s.english, currentVoice, currentSpeed);
+          extra.ssml = true;
+        }
+        return getTTSUrl({ text: ttsText, voice, engine, ...extra }).then(url => {
+          if (url) setAudioCache(cacheKey, url);
+          return url || '';
+        });
+      });
+
+      // 顺序播放
+      for (let i = 0; i < audioPromises.length; i++) {
+        if (playAllAbortRef.current.aborted) break;
+        setPlayingIndex(i);
+        const url = await audioPromises[i];
+        if (audioRef.current) {
+          audioRef.current.src = typeof url === 'string' ? url : '';
+          audioRef.current.play();
+          try {
+            await new Promise<void>((resolve, reject) => {
+              const onEnded = () => {
+                audioRef.current?.removeEventListener('ended', onEnded);
+                audioRef.current?.removeEventListener('pause', onPause);
+                resolve();
+              };
+              const onPause = () => {
+                audioRef.current?.removeEventListener('ended', onEnded);
+                audioRef.current?.removeEventListener('pause', onPause);
+                resolve();
+              };
+              audioRef.current?.addEventListener('ended', onEnded);
+              audioRef.current?.addEventListener('pause', onPause);
+              audioRef.current?.play();
+            });
+          } catch {}
+        }
       }
     }
+    
     setIsPlayingAll(false);
     setPlayingIndex(null);
   };
@@ -339,7 +408,7 @@ export default function ArticlePanel() {
       setPlayingIndex(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentVoice, engine, currentSpeed, articleState]);
+  }, [currentVoice, engine, currentSpeed, articleState, dialogueState, contentType]);
 
   const renderParagraph = () => (
     <div className="text-base leading-relaxed font-normal text-gray-700 dark:text-gray-300">
@@ -437,6 +506,11 @@ export default function ArticlePanel() {
         body.topic = '';
       }
       
+      // 如果是对话类型，添加风格参数
+      if (contentType === 'dialogue') {
+        body.style = dialogueStyle;
+      }
+      
       const apiEndpoint = contentType === 'dialogue' ? '/api/generate-dialogue' : '/api/generate-article';
       const res = await fetch(apiEndpoint, {
         method: 'POST',
@@ -477,11 +551,14 @@ export default function ArticlePanel() {
 
   function handleShare() {
     if (navigator.share) {
-      navigator.share({
-        title: articleState?.title || 'AI English Article',
-        text: articleState?.sentences.map(s => s.english).join(' '),
+      const shareData = {
+        title: contentType === 'dialogue' ? dialogueState?.title || 'AI English Dialogue' : articleState?.title || 'AI English Article',
+        text: contentType === 'dialogue' 
+          ? dialogueState?.messages?.map(msg => msg.english).join(' ') || ''
+          : articleState?.sentences.map(s => s.english).join(' '),
         url: window.location.href
-      });
+      };
+      navigator.share(shareData);
     } else {
       navigator.clipboard.writeText(window.location.href);
       alert('链接已复制到剪贴板');
@@ -556,43 +633,60 @@ export default function ArticlePanel() {
               {/* 内容类型选择器 */}
               <div className="flex flex-col gap-2 w-full">
                 <label className="text-sm text-gray-700 dark:text-gray-200">内容类型：</label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className={`flex-1 px-3 py-2 rounded-lg border transition-colors ${
-                      contentType === 'article'
-                        ? 'bg-indigo-600 text-white border-indigo-600'
-                        : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
-                    }`}
-                    onClick={() => setContentType('article')}
-                    disabled={generating}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <span>短文</span>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    className={`flex-1 px-3 py-2 rounded-lg border transition-colors ${
-                      contentType === 'dialogue'
-                        ? 'bg-green-600 text-white border-green-600'
-                        : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
-                    }`}
-                    onClick={() => setContentType('dialogue')}
-                    disabled={generating}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                      <span>对话</span>
-                    </div>
-                  </button>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="contentType"
+                      value="article"
+                      checked={contentType === 'article'}
+                      onChange={(e) => setContentType(e.target.value as 'article' | 'dialogue')}
+                      disabled={generating}
+                      className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-200">短文</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="contentType"
+                      value="dialogue"
+                      checked={contentType === 'dialogue'}
+                      onChange={(e) => setContentType(e.target.value as 'article' | 'dialogue')}
+                      disabled={generating}
+                      className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-200">对话</span>
+                  </label>
                 </div>
               </div>
+
+              {/* 对话风格选择器（仅在选择对话时显示） */}
+              {contentType === 'dialogue' && (
+                <div className="flex flex-col gap-2 w-full">
+                  <label className="text-sm text-gray-700 dark:text-gray-200">对话风格：</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {Object.entries(DIALOGUE_STYLES).map(([key, style]) => (
+                      <label key={key} className="flex items-center gap-2 cursor-pointer p-2 rounded border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <input
+                          type="radio"
+                          name="dialogueStyle"
+                          value={key}
+                          checked={dialogueStyle === key}
+                          onChange={(e) => setDialogueStyle(e.target.value as 'casual' | 'business' | 'social')}
+                          disabled={generating}
+                          className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{style.name}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{style.description}</span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Length + Buttons */}
               <div className="flex flex-col gap-2 w-full mt-2">
                 <div className="flex items-center whitespace-nowrap gap-2 w-full">
@@ -667,7 +761,36 @@ export default function ArticlePanel() {
           
           {/* 对话显示区域 */}
           {contentType === 'dialogue' && dialogueState.messages.length > 0 && (
-            <div ref={articleRef}>
+            <div ref={articleRef} className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-2xl mx-auto mt-8">
+              <h2 className="text-3xl font-serif font-bold text-gray-800 dark:text-white mb-4 text-center">
+                {dialogueState.title}
+              </h2>
+              {/* 播放和分享按钮，居中 */}
+              <div className="flex justify-center gap-4 mb-6">
+                <button
+                  onClick={handlePlayAll}
+                  disabled={loadingIndex !== null}
+                  title={isPlayingAll ? "Pause" : "Play All"}
+                  className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isPlayingAll ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H14M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
+                    </svg>
+                  ) : (
+                    <SpeakerWaveIcon className="w-6 h-6" />
+                  )}
+                </button>
+                <button
+                  onClick={handleShare}
+                  title="分享"
+                  className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 8a3 3 0 11-6 0 3 3 0 016 0zm6 8a3 3 0 11-6 0 3 3 0 016 0zm-6 0a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
+              </div>
               <DialoguePanel dialogue={dialogueState} />
             </div>
           )}
