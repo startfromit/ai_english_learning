@@ -135,16 +135,13 @@ export const authOptions: NextAuthOptions = {
         accessToken: { type: 'text' },
         refreshToken: { type: 'text' },
       },
-      async authorize(credentials: Record<"accessToken" | "refreshToken", string> | undefined) {
-        console.log("Supabase provider authorize called with credentials:", credentials ? "tokens provided" : "no tokens");
-        
+      async authorize(credentials) {
         if (!credentials?.accessToken || !credentials?.refreshToken) {
-          console.error("No Supabase tokens provided to authorize");
+          console.error("Authorize Error: Access Token or Refresh Token was not provided.");
           return null;
         }
 
         const supabase = createClient();
-        console.log("Setting Supabase session...");
 
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: credentials.accessToken,
@@ -152,37 +149,28 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (sessionError) {
-          console.error("Could not set Supabase session:", sessionError);
+          console.error(`Authorize Error: Supabase setSession failed: ${sessionError.message}`);
           return null;
         }
-
-        console.log("Supabase session set successfully, getting user...");
 
         const { data: { user }, error: userError } = await supabase.auth.getUser();
 
         if (userError || !user) {
-          console.error("Could not get user from Supabase:", userError);
+          console.error(`Authorize Error: Supabase getUser failed. User: ${!!user}, Error: ${userError?.message}`);
           return null;
         }
-
-        console.log("User retrieved from Supabase:", user.id);
-
+        
         const { data: publicUser } = await supabase
           .from('users')
-          .select('*')
+          .select('name')
           .eq('id', user.id)
           .single();
 
-        console.log("Public user data:", publicUser);
-        
-        const result = {
+        return {
           id: user.id,
           email: user.email,
           name: publicUser?.name || user.email,
         };
-        
-        console.log("Returning user object for NextAuth:", result);
-        return result;
       },
     }),
     // Provider for standard email/password sign-in

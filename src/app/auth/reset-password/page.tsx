@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
@@ -10,24 +11,26 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
-  const [token, setToken] = useState<string | null>(null)
-  
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   useEffect(() => {
-    // Supabase redirects with the access token in the URL hash
-    // We need to extract it from there on the client side.
-    const hash = window.location.hash
-    const params = new URLSearchParams(hash.substring(1)) // remove #
-    const accessToken = params.get('access_token')
+    // This effect handles the initial authentication state change
+    // when the component mounts with a reset token in the URL.
+    const supabase = createClient()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        // The user is now in a state where they can update their password.
+        // We don't need to do anything with the session object here,
+        // just being in this state is enough authorization.
+        setMessage('You can now set a new password.');
+      }
+    })
 
-    if (accessToken) {
-      setToken(accessToken)
-    } else {
-       setError("No reset token found. The link might be invalid or expired. Please request a new one.");
+    return () => {
+      subscription?.unsubscribe()
     }
   }, [])
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,29 +38,23 @@ export default function ResetPasswordPage() {
       setError('Passwords do not match.')
       return
     }
-    if (!token) {
-      setError('Missing verification token.')
-      return
-    }
 
     setLoading(true)
     setError('')
     setMessage('')
 
-    const res = await fetch('/api/auth/update-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, password }),
+    const supabase = createClient()
+    const { error } = await supabase.auth.updateUser({
+      password: password,
     })
 
-    if (res.ok) {
+    if (!error) {
       setMessage('Your password has been reset successfully! Redirecting to sign in...')
       setTimeout(() => {
         router.push('/auth/signin')
       }, 3000)
     } else {
-      const { error } = await res.json()
-      setError(error || 'Failed to reset password. The link may have expired.')
+      setError(error.message || 'Failed to reset password. The link may be invalid or expired.')
     }
 
     setLoading(false)
@@ -83,7 +80,7 @@ export default function ResetPasswordPage() {
             </div>
           )}
           
-          {!message && (
+          {!message.startsWith('Your password has been reset') && (
             <>
               <div className="rounded-md shadow-sm -space-y-px">
                 <div>
@@ -116,7 +113,7 @@ export default function ResetPasswordPage() {
               <div>
                 <button
                   type="submit"
-                  disabled={loading || !token}
+                  disabled={loading}
                   className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
                 >
                   {loading ? 'Resetting...' : 'Set New Password'}

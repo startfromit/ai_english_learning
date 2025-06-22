@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import OtpInput from 'react-otp-input'
+import { signIn } from 'next-auth/react'
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('')
@@ -42,53 +43,40 @@ export default function SignUpPage() {
     setError(null)
 
     try {
-      console.log('Starting signup process...')
-      
-      const res = await fetch('/api/auth/verify-otp-and-register', {
+      const apiRes = await fetch('/api/auth/verify-otp-and-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, token: otp, password, name }),
       })
 
-      const data = await res.json()
-      console.log('API response:', data)
-
-      if (!res.ok) {
+      const data = await apiRes.json()
+      if (!apiRes.ok) {
         throw new Error(data.error || 'Sign up failed.')
       }
 
-      console.log('OTP verification successful, calling auto-signin API...')
-      console.log('Session data:', data.session)
-
-      // Call our custom auto-signin API
-      const signInRes = await fetch('/api/auth/auto-signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accessToken: data.session.access_token,
-          refreshToken: data.session.refresh_token,
-        }),
+      // We have a valid Supabase session, now sign in with NextAuth
+      const signInResult = await signIn('supabase', {
+        redirect: false,
+        accessToken: data.session.access_token,
+        refreshToken: data.session.refresh_token,
       })
 
-      const signInData = await signInRes.json()
-      console.log('Auto-signin response:', signInData)
-
-      if (!signInRes.ok) {
-        throw new Error(signInData.error || 'Auto signin failed')
+      // After signIn, check the result.
+      // The most reliable way to check for failure is to see if the `ok` property is not true.
+      if (!signInResult?.ok) {
+        // If there's an error, it will be in signInResult.error.
+        // The authorize function will throw an error, and NextAuth catches it.
+        setError(`Sign in failed: ${signInResult?.error || 'An unknown credentials error occurred.'}`)
+        // Explicitly return to stop any further execution
+        return; 
       }
-
-      console.log('Auto-signin successful, dispatching event and redirecting...')
       
-      // Dispatch a custom event to notify other parts of the app (like AuthNav) to update.
-      window.dispatchEvent(new Event('auth-change'));
-
-      // Redirect to home page. No delay needed.
+      // If we reach here, it means signIn was successful.
       router.push('/')
       router.refresh()
 
     } catch (err) {
       const error = err as Error
-      console.error('Signup error:', error)
       setError(error.message || 'An unexpected error occurred.')
     } finally {
       setLoading(false)

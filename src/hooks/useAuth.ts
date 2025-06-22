@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 
 type AuthUser = {
   id: string
@@ -12,7 +13,6 @@ type AuthUser = {
 type AuthState = {
   user: AuthUser | null
   loading: boolean
-  provider?: string
 }
 
 export const useAuth = (): AuthState => {
@@ -21,37 +21,28 @@ export const useAuth = (): AuthState => {
     loading: true,
   })
 
-  const checkAuth = useCallback(async () => {
-    // We don't set loading to true here on re-checks to avoid UI flickering.
-    // Loading is only true on the initial mount.
-    try {
-      const response = await fetch('/api/auth/check-session')
-      if (!response.ok) throw new Error('Session check failed')
-
-      const { user } = await response.json()
-
-      if (user) {
-        setState({ user, loading: false, provider: 'custom' })
-      } else {
-        setState({ user: null, loading: false, provider: 'none' })
-      }
-    } catch (error) {
-      console.error('Error checking auth status:', error)
-      setState({ user: null, loading: false, provider: 'none' })
-    }
-  }, [])
+  const { data: session, status } = useSession()
 
   useEffect(() => {
-    checkAuth() // Initial check on component mount.
-
-    // Listen for the custom event to re-check auth
-    window.addEventListener('auth-change', checkAuth)
-
-    // Cleanup the listener when the component unmounts
-    return () => {
-      window.removeEventListener('auth-change', checkAuth)
+    if (status === 'loading') {
+      setState(prev => ({ ...prev, loading: true }))
+    } else if (session?.user) {
+      setState({
+        user: {
+          id: session.user.id || '',
+          email: session.user.email,
+          name: session.user.name,
+          image: session.user.image,
+        },
+        loading: false,
+      })
+    } else {
+      setState({
+        user: null,
+        loading: false,
+      })
     }
-  }, [checkAuth])
+  }, [session, status])
 
   return state
 }
