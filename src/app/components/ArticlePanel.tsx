@@ -566,13 +566,20 @@ export default function ArticlePanel() {
       const shareData = {
         title: contentType === 'dialogue' ? dialogueState?.title || 'AI English Dialogue' : articleState?.title || 'AI English Article',
         text: contentType === 'dialogue' 
-          ? dialogueState?.messages?.map(msg => msg.english).join(' ') || ''
+          ? dialogueState?.messages?.map(msg => `${msg.speaker}: ${msg.english}`).join('\n') || ''
           : articleState?.sentences.map(s => s.english).join(' '),
         url: window.location.href
       };
       navigator.share(shareData);
     } else {
-      navigator.clipboard.writeText(window.location.href);
+      // 对于不支持原生分享的情况，也使用格式化的文本
+      const shareText = contentType === 'dialogue' 
+        ? dialogueState?.messages?.map(msg => `${msg.speaker}: ${msg.english}`).join('\n') || ''
+        : articleState?.sentences.map(s => s.english).join(' ');
+      
+      const fullText = `${contentType === 'dialogue' ? dialogueState?.title || 'AI English Dialogue' : articleState?.title || 'AI English Article'}\n\n${shareText}\n\n${window.location.href}`;
+      
+      navigator.clipboard.writeText(fullText);
       alert(t('linkCopied'));
     }
   }
