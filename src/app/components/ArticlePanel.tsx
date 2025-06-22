@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useContext } from 'react'
 import { getTTSUrl, TTSEngine } from '../lib/tts'
 import { motion, AnimatePresence } from 'framer-motion'
-import { SpeakerWaveIcon, EyeIcon } from '@heroicons/react/24/outline'
+import { SpeakerWaveIcon, EyeIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import { ThemeContext } from './ThemeProvider'
 import TypeIt from "typeit-react";
 import { useAuth } from '@/hooks/useAuth';
@@ -88,6 +88,7 @@ export default function ArticlePanel() {
   const [placeholder, setPlaceholder] = useState(RANDOM_TOPICS[0]);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginModalMessage, setLoginModalMessage] = useState(t('loginRequired'));
+  const [isSettingsCollapsed, setIsSettingsCollapsed] = useState(false);
   
   // Initialize customLength from localStorage after mount
   useEffect(() => {
@@ -520,6 +521,7 @@ export default function ArticlePanel() {
           if (typeof window !== 'undefined') {
             localStorage.setItem('lastDialogue', JSON.stringify(newDialogue));
           }
+          setIsSettingsCollapsed(true);
         } else {
           alert(data.error || t('dialogueGenerationFailed'));
         }
@@ -530,6 +532,7 @@ export default function ArticlePanel() {
           if (typeof window !== 'undefined') {
             localStorage.setItem('lastArticle', JSON.stringify(newArticle));
           }
+          setIsSettingsCollapsed(true);
         } else {
           alert(data.error || t('generationFailed'));
         }
@@ -588,146 +591,174 @@ export default function ArticlePanel() {
         {/* 左侧主区 */}
         <div className="flex-1 flex flex-col items-center">
           {/* 操作区卡片 */}
-          <div className="bg-white dark:bg-[#23272f] border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow w-full max-w-2xl">
-            <div className="w-full flex flex-col gap-4">
-              {/* 仅自定义话题输入区 */}
-              <div className="flex flex-col gap-2 w-full">
-                <label className="text-sm text-gray-700 dark:text-gray-200">{t('customTopic')}</label>
-                <div className="relative w-full">
-                  <TypeIt
-                    key={placeholder}
-                    options={{
-                      strings: [placeholder],
-                      speed: 50,
-                      deleteSpeed: 30,
-                      lifeLike: true,
-                      cursor: false,
-                      breakLines: false,
-                      waitUntilVisible: true,
-                    }}
-                    as="div"
-                    className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"
-                  />
-                  <input
-                    type="text"
-                    value={customTopic}
-                    onChange={(e) => setCustomTopic(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-transparent dark:border-gray-600 dark:focus:ring-indigo-400"
-                    placeholder="" // Keep this empty, TypeIt will be the placeholder
-                  />
-                </div>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {topicSuggests.map(sug => (
-                    <button
-                      key={sug}
-                      type="button"
-                      className="px-2 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-200 hover:bg-indigo-100 dark:hover:bg-indigo-800 border border-gray-200 dark:border-gray-600 transition"
-                      onClick={() => setCustomTopic(sug)}
-                      disabled={generating}
-                    >
-                      {sug}
-                    </button>
-                  ))}
-                </div>
-                <span className="text-xs text-gray-400 mt-1">{t('topicPlaceholder_prefix')}"{t('topicPlaceholder_suggest')}"</span>
-              </div>
-              
-              {/* 内容类型选择器 */}
-              <div className="flex flex-col gap-2 w-full">
-                <label className="text-sm text-gray-700 dark:text-gray-200">{t('contentType')}</label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="contentType"
-                      value="article"
-                      checked={contentType === 'article'}
-                      onChange={(e) => setContentType(e.target.value as 'article' | 'dialogue')}
-                      disabled={generating}
-                      className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-200">{t('article')}</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="contentType"
-                      value="dialogue"
-                      checked={contentType === 'dialogue'}
-                      onChange={(e) => setContentType(e.target.value as 'article' | 'dialogue')}
-                      disabled={generating}
-                      className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-200">{t('dialogue')}</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* 对话风格选择器（仅在选择对话时显示） */}
-              {contentType === 'dialogue' && (
-                <div className="flex flex-col gap-2 w-full">
-                  <label className="text-sm text-gray-700 dark:text-gray-200">{t('dialogueStyle')}</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {Object.entries({
-                      casual: { name: t('style_casual'), description: t('style_casual_desc')},
-                      business: { name: t('style_business'), description: t('style_business_desc')},
-                      social: { name: t('style_social'), description: t('style_social_desc')},
-                    }).map(([key, style]) => (
-                      <label key={key} className="flex items-center gap-2 cursor-pointer p-2 rounded border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <input
-                          type="radio"
-                          name="dialogueStyle"
-                          value={key}
-                          checked={dialogueStyle === key}
-                          onChange={(e) => setDialogueStyle(e.target.value as 'casual' | 'business' | 'social')}
-                          disabled={generating}
-                          className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                        />
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{style.name}</span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">{style.description}</span>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Length + Buttons */}
-              <div className="flex flex-col gap-2 w-full mt-2">
-                <div className="flex items-center whitespace-nowrap gap-2 w-full">
-                  <label className="text-sm text-gray-700 dark:text-gray-200 mr-2 whitespace-nowrap">{t('length')}</label>
-                  <input
-                    type="range"
-                    min={100}
-                    max={500}
-                    step={10}
-                    value={customLength}
-                    onChange={e => setCustomLength(Number(e.target.value))}
-                    disabled={generating}
-                    className="accent-indigo-500 max-w-xs w-full bg-white dark:bg-[#23272f]"
-                    style={{ minWidth: 120 }}
-                  />
-                  <span className="ml-2 text-base font-semibold w-12 text-center select-none bg-gray-100 dark:bg-[#23272f] text-gray-900 dark:text-gray-100 rounded px-2 py-0.5 border border-gray-200 dark:border-gray-700">{customLength}</span>
-                </div>
-                <div className="flex gap-2 justify-end min-w-fit w-full mt-2">
-                  <button
-                    className="btn btn-primary shadow-md px-6 py-2 text-base rounded-lg font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition disabled:opacity-60 dark:bg-indigo-700 dark:hover:bg-indigo-800"
-                    onClick={() => handleGenerate('custom')}
-                    disabled={generating || !customTopic.trim()}
-                  >
-                    {generating ? t('generating') : contentType === 'dialogue' ? t('generateDialogue') : t('generateArticle')}
-                  </button>
-                  <button
-                    className="btn btn-secondary shadow-md px-6 py-2 text-base rounded-lg font-semibold bg-gray-200 text-gray-700 hover:bg-indigo-50 transition disabled:opacity-60 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
-                    onClick={() => handleGenerate('random')}
-                    disabled={generating}
-                  >
-                    {t('randomTopic')}
-                  </button>
-                </div>
-              </div>
+          <div className="bg-white dark:bg-[#23272f] border border-gray-200 dark:border-gray-700 rounded-xl shadow w-full max-w-2xl overflow-hidden">
+            <div
+              className="p-4 cursor-pointer flex justify-between items-center"
+              onClick={() => setIsSettingsCollapsed(!isSettingsCollapsed)}
+            >
+              <h2 className="text-lg font-semibold">{t('generationSettings', 'Generation Settings')}</h2>
+              <motion.div animate={{ rotate: isSettingsCollapsed ? 180 : 0 }} transition={{ duration: 0.3 }}>
+                <ChevronUpIcon className="w-5 h-5" />
+              </motion.div>
             </div>
+            <AnimatePresence>
+              {!isSettingsCollapsed && (
+                <motion.div
+                  key="settings-panel"
+                  initial="collapsed"
+                  animate="open"
+                  exit="collapsed"
+                  variants={{
+                    open: { opacity: 1, height: 'auto' },
+                    collapsed: { opacity: 0, height: 0 },
+                  }}
+                  transition={{ duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-4 pb-4">
+                    <div className="w-full flex flex-col gap-4">
+                      {/* 仅自定义话题输入区 */}
+                      <div className="flex flex-col gap-2 w-full">
+                        <label className="text-sm text-gray-700 dark:text-gray-200">{t('customTopic')}</label>
+                        <div className="relative w-full">
+                          <TypeIt
+                            key={placeholder}
+                            options={{
+                              strings: [placeholder],
+                              speed: 50,
+                              deleteSpeed: 30,
+                              lifeLike: true,
+                              cursor: false,
+                              breakLines: false,
+                              waitUntilVisible: true,
+                            }}
+                            as="div"
+                            className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"
+                          />
+                          <input
+                            type="text"
+                            value={customTopic}
+                            onChange={(e) => setCustomTopic(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-transparent dark:border-gray-600 dark:focus:ring-indigo-400"
+                            placeholder="" // Keep this empty, TypeIt will be the placeholder
+                          />
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {topicSuggests.map(sug => (
+                            <button
+                              key={sug}
+                              type="button"
+                              className="px-2 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-200 hover:bg-indigo-100 dark:hover:bg-indigo-800 border border-gray-200 dark:border-gray-600 transition"
+                              onClick={() => setCustomTopic(sug)}
+                              disabled={generating}
+                            >
+                              {sug}
+                            </button>
+                          ))}
+                        </div>
+                        <span className="text-xs text-gray-400 mt-1">{t('topicPlaceholder_prefix')}"{t('topicPlaceholder_suggest')}"</span>
+                      </div>
+                      
+                      {/* 内容类型选择器 */}
+                      <div className="flex flex-col gap-2 w-full">
+                        <label className="text-sm text-gray-700 dark:text-gray-200">{t('contentType')}</label>
+                        <div className="flex gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="contentType"
+                              value="article"
+                              checked={contentType === 'article'}
+                              onChange={(e) => setContentType(e.target.value as 'article' | 'dialogue')}
+                              disabled={generating}
+                              className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-200">{t('article')}</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="contentType"
+                              value="dialogue"
+                              checked={contentType === 'dialogue'}
+                              onChange={(e) => setContentType(e.target.value as 'article' | 'dialogue')}
+                              disabled={generating}
+                              className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-200">{t('dialogue')}</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* 对话风格选择器（仅在选择对话时显示） */}
+                      {contentType === 'dialogue' && (
+                        <div className="flex flex-col gap-2 w-full">
+                          <label className="text-sm text-gray-700 dark:text-gray-200">{t('dialogueStyle')}</label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {Object.entries({
+                              casual: { name: t('style_casual'), description: t('style_casual_desc')},
+                              business: { name: t('style_business'), description: t('style_business_desc')},
+                              social: { name: t('style_social'), description: t('style_social_desc')},
+                            }).map(([key, style]) => (
+                              <label key={key} className="flex items-center gap-2 cursor-pointer p-2 rounded border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <input
+                                  type="radio"
+                                  name="dialogueStyle"
+                                  value={key}
+                                  checked={dialogueStyle === key}
+                                  onChange={(e) => setDialogueStyle(e.target.value as 'casual' | 'business' | 'social')}
+                                  disabled={generating}
+                                  className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                />
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{style.name}</span>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">{style.description}</span>
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Length + Buttons */}
+                      <div className="flex flex-col gap-2 w-full mt-2">
+                        <div className="flex items-center whitespace-nowrap gap-2 w-full">
+                          <label className="text-sm text-gray-700 dark:text-gray-200 mr-2 whitespace-nowrap">{t('length')}</label>
+                          <input
+                            type="range"
+                            min={100}
+                            max={500}
+                            step={10}
+                            value={customLength}
+                            onChange={e => setCustomLength(Number(e.target.value))}
+                            disabled={generating}
+                            className="accent-indigo-500 max-w-xs w-full bg-white dark:bg-[#23272f]"
+                            style={{ minWidth: 120 }}
+                          />
+                          <span className="ml-2 text-base font-semibold w-12 text-center select-none bg-gray-100 dark:bg-[#23272f] text-gray-900 dark:text-gray-100 rounded px-2 py-0.5 border border-gray-200 dark:border-gray-700">{customLength}</span>
+                        </div>
+                        <div className="flex gap-2 justify-end min-w-fit w-full mt-2">
+                          <button
+                            className="btn btn-primary shadow-md px-6 py-2 text-base rounded-lg font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition disabled:opacity-60 dark:bg-indigo-700 dark:hover:bg-indigo-800"
+                            onClick={() => handleGenerate('custom')}
+                            disabled={generating || !customTopic.trim()}
+                          >
+                            {generating ? t('generating') : contentType === 'dialogue' ? t('generateDialogue') : t('generateArticle')}
+                          </button>
+                          <button
+                            className="btn btn-secondary shadow-md px-6 py-2 text-base rounded-lg font-semibold bg-gray-200 text-gray-700 hover:bg-indigo-50 transition disabled:opacity-60 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+                            onClick={() => handleGenerate('random')}
+                            disabled={generating}
+                          >
+                            {t('randomTopic')}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
           {/* 内容区卡片：标题+短文 */}
           {contentType === 'article' && articleState.sentences.length > 0 && (
