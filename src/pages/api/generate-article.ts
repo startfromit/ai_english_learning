@@ -15,6 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const parser = StructuredOutputParser.fromZodSchema(
     z.object({
       title: z.string(),
+      title_chinese: z.string(),
       sentences: z.array(
         z.object({
           english: z.string(),
@@ -91,7 +92,7 @@ Generate something unique and unexpected:`;
   const prompt = [
     {
       role: "user",
-      content: `请用英文写一篇英文部分不少于${safeLength}词的短文，话题为"${finalTopic}"。请将英文内容拆分为句子，每句后面加上精准的中文翻译，并给短文拟一个简洁、准确的英文标题。输出如下结构的JSON对象：\n{\n  \"title\": \"...\",\n  \"sentences\": [\n    {\"english\": \"...\", \"chinese\": \"...\"},\n    ...\n  ]\n}\n请严格按照上述JSON结构输出，不要加任何多余内容。${formatInstructions}`,
+      content: `请用英文写一篇英文部分不少于${safeLength}词的短文，话题为"${finalTopic}"。请将英文内容拆分为句子，每句后面加上精准的中文翻译，并给短文拟一个简洁、准确的英文标题，同时提供标题的中文翻译。输出如下结构的JSON对象：\n{\n  \"title\": \"...\",\n  \"title_chinese\": \"...\",\n  \"sentences\": [\n    {\"english\": \"...\", \"chinese\": \"...\"},\n    ...\n  ]\n}\n请严格按照上述JSON结构输出，不要加任何多余内容。${formatInstructions}`,
     },
   ];
 

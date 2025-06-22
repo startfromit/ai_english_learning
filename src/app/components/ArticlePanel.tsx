@@ -29,6 +29,7 @@ interface DialogueMessage {
 
 interface Dialogue {
   title: string
+  title_chinese: string;
   topic: string
   participants: string[]
   messages: DialogueMessage[]
@@ -36,6 +37,7 @@ interface Dialogue {
 
 interface Article {
   title: string
+  title_chinese: string;
   theme: string
   sentences: Sentence[]
   vocabulary: {
@@ -499,7 +501,6 @@ export default function ArticlePanel() {
         body.topic = '';
       }
       
-      // 如果是对话类型，添加风格参数
       if (contentType === 'dialogue') {
         body.style = dialogueStyle;
       }
@@ -514,16 +515,17 @@ export default function ArticlePanel() {
       
       if (contentType === 'dialogue') {
         if (data.messages && Array.isArray(data.messages) && data.title) {
-          setDialogue(data);
+          const newDialogue = { ...data, title_chinese: data.title_chinese || '' };
+          setDialogue(newDialogue);
           if (typeof window !== 'undefined') {
-            localStorage.setItem('lastDialogue', JSON.stringify(data));
+            localStorage.setItem('lastDialogue', JSON.stringify(newDialogue));
           }
         } else {
           alert(data.error || t('dialogueGenerationFailed'));
         }
       } else {
         if (data.sentences && Array.isArray(data.sentences) && data.title) {
-          const newArticle = { ...articleState, sentences: data.sentences, theme: '', title: data.title };
+          const newArticle = { ...articleState, sentences: data.sentences, theme: '', title: data.title, title_chinese: data.title_chinese || '' };
           setArticle(newArticle);
           if (typeof window !== 'undefined') {
             localStorage.setItem('lastArticle', JSON.stringify(newArticle));
@@ -733,13 +735,44 @@ export default function ArticlePanel() {
               <div className="mb-6 text-center">
                 <div
                   onClick={() => handleSpeak(articleState.title, -1)}
+                  onMouseEnter={() => setShowTitleChinese(true)}
+                  onMouseLeave={() => setShowTitleChinese(false)}
+                  onMouseMove={(e) => {
+                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    setBubblePos({
+                      x: e.clientX - rect.left,
+                      y: e.clientY - rect.top,
+                      absLeft: rect.left + window.scrollX,
+                      absTop: rect.top + window.scrollY
+                    });
+                  }}
                   className="inline-block max-w-full cursor-pointer group"
                 >
                   <h2 className="text-3xl font-serif font-bold text-gray-800 dark:text-white inline group-hover:underline decoration-dashed decoration-gray-400 underline-offset-4 dark:decoration-gray-500">
                     {articleState.title}
-                    <SpeakerWaveIcon className="w-5 h-5 ml-2 inline opacity-0 group-hover:opacity-70 transition-opacity duration-200" />
                   </h2>
                 </div>
+                <AnimatePresence>
+                  {showTitleChinese && bubblePos && articleState.title_chinese && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.22 }}
+                      className="fixed z-50 px-3 py-1 bg-gray-800 text-white text-sm rounded shadow-lg pointer-events-none select-none whitespace-pre-line max-w-xs text-left"
+                      style={{
+                        left: bubblePos.absLeft + bubblePos.x,
+                        top: bubblePos.absTop + bubblePos.y + 24,
+                        minWidth: 'max-content',
+                        maxWidth: 320,
+                        width: 'max-content',
+                        transform: 'translate(-50%, 0)'
+                      }}
+                    >
+                      {articleState.title_chinese}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   {articleState.theme}
                 </div>
@@ -781,13 +814,44 @@ export default function ArticlePanel() {
                 <div className="text-center">
                   <div
                     onClick={() => handleSpeak(dialogueState.title, -1)}
+                    onMouseEnter={() => setShowTitleChinese(true)}
+                    onMouseLeave={() => setShowTitleChinese(false)}
+                    onMouseMove={(e) => {
+                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      setBubblePos({
+                        x: e.clientX - rect.left,
+                        y: e.clientY - rect.top,
+                        absLeft: rect.left + window.scrollX,
+                        absTop: rect.top + window.scrollY
+                      });
+                    }}
                     className="inline-block max-w-full cursor-pointer group"
                   >
                     <h2 className="text-3xl font-serif font-bold text-gray-800 dark:text-white mb-1 inline group-hover:underline decoration-dashed decoration-gray-400 underline-offset-4 dark:decoration-gray-500">
                       {dialogueState.title}
-                      <SpeakerWaveIcon className="w-5 h-5 ml-2 inline opacity-0 group-hover:opacity-70 transition-opacity duration-200" />
                     </h2>
                   </div>
+                  <AnimatePresence>
+                    {showTitleChinese && bubblePos && dialogueState.title_chinese && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.22 }}
+                        className="fixed z-50 px-3 py-1 bg-gray-800 text-white text-sm rounded shadow-lg pointer-events-none select-none whitespace-pre-line max-w-xs text-left"
+                        style={{
+                          left: bubblePos.absLeft + bubblePos.x,
+                          top: bubblePos.absTop + bubblePos.y + 24,
+                          minWidth: 'max-content',
+                          maxWidth: 320,
+                          width: 'max-content',
+                          transform: 'translate(-50%, 0)'
+                        }}
+                      >
+                        {dialogueState.title_chinese}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {dialogueState.topic}
                   </div>

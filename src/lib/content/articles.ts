@@ -1,5 +1,6 @@
 export interface PredefinedArticle {
   title: string;
+  title_chinese: string;
   theme: string;
   sentences: {
     english: string;
@@ -15,6 +16,7 @@ export interface PredefinedArticle {
 export const PREDEFINED_ARTICLES: PredefinedArticle[] = [
   {
     title: "The Future of Remote Work",
+    title_chinese: "远程工作的未来",
     theme: "Technology and Work",
     sentences: [
       {
@@ -75,6 +77,7 @@ export const PREDEFINED_ARTICLES: PredefinedArticle[] = [
   },
   {
     title: "The Impact of Social Media on Modern Communication",
+    title_chinese: "社交媒体对现代交流的影响",
     theme: "Technology and Society",
     sentences: [
       {
@@ -135,6 +138,7 @@ export const PREDEFINED_ARTICLES: PredefinedArticle[] = [
   },
   {
     title: "The Importance of Environmental Conservation",
+    title_chinese: "环境保护的重要性",
     theme: "Environment and Sustainability",
     sentences: [
       {

@@ -1,5 +1,6 @@
 export interface PredefinedDialogue {
   title: string;
+  title_chinese: string;
   topic: string;
   participants: string[];
   messages: {
@@ -14,6 +15,7 @@ export interface PredefinedDialogue {
 export const PREDEFINED_DIALOGUES: PredefinedDialogue[] = [
   {
     title: "Planning a Weekend Trip",
+    title_chinese: "计划周末旅行",
     topic: "Travel Planning",
     participants: ["Sarah", "Mike"],
     messages: [
@@ -91,6 +93,7 @@ export const PREDEFINED_DIALOGUES: PredefinedDialogue[] = [
   },
   {
     title: "Discussing Career Goals",
+    title_chinese: "讨论职业目标",
     topic: "Professional Development",
     participants: ["Emma", "David"],
     messages: [
@@ -168,6 +171,7 @@ export const PREDEFINED_DIALOGUES: PredefinedDialogue[] = [
   },
   {
     title: "Coffee Shop Chat",
+    title_chinese: "咖啡店聊天",
     topic: "Casual Conversation",
     participants: ["Lisa", "Tom"],
     messages: [

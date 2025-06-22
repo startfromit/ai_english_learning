@@ -34,6 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const parser = StructuredOutputParser.fromZodSchema(
     z.object({
       title: z.string(),
+      title_chinese: z.string(),
       topic: z.string(),
       participants: z.array(z.string()),
       messages: z.array(
@@ -125,10 +126,12 @@ Requirements:
 - Cover different aspects of the topic naturally
 - Include common expressions and idioms where appropriate
 - Assign gender to each speaker: Alex (male), Sarah (female)
+- Provide a Chinese translation for the dialogue title.
 
 Output the following JSON structure:
 {
   "title": "A conversation about [topic]",
+  "title_chinese": "关于[话题]的对话",
   "topic": "${finalTopic}",
   "participants": ["${participantNames[0]}", "${participantNames[1]}"],
   "messages": [
