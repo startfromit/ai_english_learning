@@ -3,6 +3,7 @@ import Link from 'next/link'
 import AuthNav from '@/components/AuthNav'
 import { useContext } from 'react'
 import { ThemeContext } from './ThemeProvider'
+import LocaleSwitcher from './LocaleSwitcher'
 
 function ThemeToggle() {
   const { themeMode, setThemeMode } = useContext(ThemeContext)
@@ -29,6 +30,8 @@ function ThemeToggle() {
 }
 
 export default function Header() {
+  const { themeMode, setThemeMode } = useContext(ThemeContext) as { themeMode: 'light' | 'dark', setThemeMode: (mode: 'light' | 'dark') => void }
+  
   return (
     <header className="bg-white dark:bg-gray-800 shadow-md">
       <div className="container mx-auto px-4">
@@ -40,9 +43,10 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* Right section: ThemeToggle + AuthNav */}
+          {/* Right section: ThemeToggle + LocaleSwitcher + AuthNav */}
           <div className="flex items-center">
             <ThemeToggle />
+            <LocaleSwitcher />
             <AuthNav />
           </div>
         </nav>

@@ -1,4 +1,7 @@
-import type { Metadata } from 'next'
+'use client';
+
+import { I18nextProvider } from 'react-i18next';
+import i18n from '@/lib/i18n';
 import { Inter as FontSans } from 'next/font/google'
 import './globals.css'
 import { cn } from '@/lib/utils'
@@ -12,34 +15,31 @@ const fontSans = FontSans({
   variable: '--font-sans',
 })
 
-export const metadata: Metadata = {
-  title: 'AI English Learning',
-  description: 'Learn English with AI-powered conversations and articles.',
-}
-
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={cn(
-          'min-h-screen bg-background font-sans antialiased flex flex-col',
-          fontSans.variable
-        )}
-      >
-        <AuthProvider>
-          <ThemeProvider>
-            <div className="flex-grow">
-              <Header />
-              <main>{children}</main>
-            </div>
-            <Footer />
-          </ThemeProvider>
-        </AuthProvider>
-      </body>
-    </html>
+    <I18nextProvider i18n={i18n}>
+      <html lang="en" suppressHydrationWarning>
+        <body
+          className={cn(
+            'min-h-screen bg-background font-sans antialiased flex flex-col',
+            fontSans.variable
+          )}
+        >
+          <AuthProvider>
+            <ThemeProvider>
+              <div className="flex-grow">
+                <Header />
+                <main>{children}</main>
+              </div>
+              <Footer />
+            </ThemeProvider>
+          </AuthProvider>
+        </body>
+      </html>
+    </I18nextProvider>
   )
 } 

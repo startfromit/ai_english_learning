@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import LoginModal from './LoginModal';
 import DialoguePanel from './DialoguePanel';
 import { RANDOM_TOPICS, getRandomTopics } from '@/lib/topics';
+import { useTranslation } from 'react-i18next'
 
 interface Sentence {
   english: string
@@ -42,22 +43,6 @@ interface Article {
     example: string
   }[]
 }
-
-// 对话风格定义
-const DIALOGUE_STYLES = {
-  casual: {
-    name: '日常轻松',
-    description: '朋友间的轻松聊天，话题简单有趣'
-  },
-  business: {
-    name: '商务职场',
-    description: '工作场合的专业对话，话题正式实用'
-  },
-  social: {
-    name: '社交聚会',
-    description: '社交场合的友好交流，话题广泛有趣'
-  }
-};
 
 // Supported voices
 const VOICES = [
@@ -108,6 +93,7 @@ const article: Article = {
 }
 
 export default function ArticlePanel() {
+  const { t } = useTranslation();
   const { user, loading } = useAuth();
   const router = useRouter();
   const [showChinese, setShowChinese] = useState(false)
@@ -122,7 +108,7 @@ export default function ArticlePanel() {
   const [customLength, setCustomLength] = useState(300);
   const [placeholder, setPlaceholder] = useState(RANDOM_TOPICS[0]);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [loginModalMessage, setLoginModalMessage] = useState('请先登录再使用此功能');
+  const [loginModalMessage, setLoginModalMessage] = useState(t('loginRequired'));
   
   // Initialize customLength from localStorage after mount
   useEffect(() => {
@@ -228,12 +214,12 @@ export default function ArticlePanel() {
 
   const handleSpeak = async (text: string, idx: number) => {
     if (loading) {
-      setLoginModalMessage('正在加载用户信息，请稍后再试');
+      setLoginModalMessage(t('userLoading'));
       setShowLoginModal(true);
       return;
     }
     if (!user) {
-      setLoginModalMessage('请先登录再使用此功能');
+      setLoginModalMessage(t('loginRequired'));
       setShowLoginModal(true);
       return;
     }
@@ -305,12 +291,12 @@ export default function ArticlePanel() {
   // 顺序播放所有句子
   const handlePlayAll = async () => {
     if (loading) {
-      setLoginModalMessage('正在加载用户信息，请稍后再试');
+      setLoginModalMessage(t('userLoading'));
       setShowLoginModal(true);
       return;
     }
     if (!user) {
-      setLoginModalMessage('请先登录再使用此功能');
+      setLoginModalMessage(t('loginRequired'));
       setShowLoginModal(true);
       return;
     }
@@ -511,12 +497,12 @@ export default function ArticlePanel() {
   // Support custom topics and random generation
   const handleGenerate = async (mode: 'custom' | 'random') => {
     if (loading) {
-      setLoginModalMessage('正在加载用户信息，请稍后再试');
+      setLoginModalMessage(t('userLoading'));
       setShowLoginModal(true);
       return;
     }
     if (!user) {
-      setLoginModalMessage('请先登录再使用此功能');
+      setLoginModalMessage(t('loginRequired'));
       setShowLoginModal(true);
       return;
     }
@@ -552,7 +538,7 @@ export default function ArticlePanel() {
             localStorage.setItem('lastDialogue', JSON.stringify(data));
           }
         } else {
-          alert(data.error || '对话生成失败');
+          alert(data.error || t('dialogueGenerationFailed'));
         }
       } else {
         if (data.sentences && Array.isArray(data.sentences) && data.title) {
@@ -562,7 +548,7 @@ export default function ArticlePanel() {
             localStorage.setItem('lastArticle', JSON.stringify(newArticle));
           }
         } else {
-          alert(data.error || '生成失败');
+          alert(data.error || t('generationFailed'));
         }
       }
       
@@ -570,7 +556,7 @@ export default function ArticlePanel() {
         articleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     } catch (e) {
-      alert('生成失败');
+      alert(t('generationFailed'));
     }
     setGenerating(false);
   }
@@ -587,7 +573,7 @@ export default function ArticlePanel() {
       navigator.share(shareData);
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert('链接已复制到剪贴板');
+      alert(t('linkCopied'));
     }
   }
 
@@ -616,7 +602,7 @@ export default function ArticlePanel() {
             <div className="w-full flex flex-col gap-4">
               {/* 仅自定义话题输入区 */}
               <div className="flex flex-col gap-2 w-full">
-                <label className="text-sm text-gray-700 dark:text-gray-200">自定义话题：</label>
+                <label className="text-sm text-gray-700 dark:text-gray-200">{t('customTopic')}</label>
                 <div className="relative w-full">
                   <TypeIt
                     key={placeholder}
@@ -653,12 +639,12 @@ export default function ArticlePanel() {
                     </button>
                   ))}
                 </div>
-                <span className="text-xs text-gray-400 mt-1">可以输入具体话题，如"{topicSuggests[0]}"</span>
+                <span className="text-xs text-gray-400 mt-1">{t('topicPlaceholder_prefix')}"{t('topicPlaceholder_suggest')}"</span>
               </div>
               
               {/* 内容类型选择器 */}
               <div className="flex flex-col gap-2 w-full">
-                <label className="text-sm text-gray-700 dark:text-gray-200">内容类型：</label>
+                <label className="text-sm text-gray-700 dark:text-gray-200">{t('contentType')}</label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -670,7 +656,7 @@ export default function ArticlePanel() {
                       disabled={generating}
                       className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-200">短文</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-200">{t('article')}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -682,7 +668,7 @@ export default function ArticlePanel() {
                       disabled={generating}
                       className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-200">对话</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-200">{t('dialogue')}</span>
                   </label>
                 </div>
               </div>
@@ -690,9 +676,13 @@ export default function ArticlePanel() {
               {/* 对话风格选择器（仅在选择对话时显示） */}
               {contentType === 'dialogue' && (
                 <div className="flex flex-col gap-2 w-full">
-                  <label className="text-sm text-gray-700 dark:text-gray-200">对话风格：</label>
+                  <label className="text-sm text-gray-700 dark:text-gray-200">{t('dialogueStyle')}</label>
                   <div className="grid grid-cols-3 gap-2">
-                    {Object.entries(DIALOGUE_STYLES).map(([key, style]) => (
+                    {Object.entries({
+                      casual: { name: t('style_casual'), description: t('style_casual_desc')},
+                      business: { name: t('style_business'), description: t('style_business_desc')},
+                      social: { name: t('style_social'), description: t('style_social_desc')},
+                    }).map(([key, style]) => (
                       <label key={key} className="flex items-center gap-2 cursor-pointer p-2 rounded border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
                         <input
                           type="radio"
@@ -716,7 +706,7 @@ export default function ArticlePanel() {
               {/* Length + Buttons */}
               <div className="flex flex-col gap-2 w-full mt-2">
                 <div className="flex items-center whitespace-nowrap gap-2 w-full">
-                  <label className="text-sm text-gray-700 dark:text-gray-200 mr-2 whitespace-nowrap">Length:</label>
+                  <label className="text-sm text-gray-700 dark:text-gray-200 mr-2 whitespace-nowrap">{t('length')}</label>
                   <input
                     type="range"
                     min={100}
@@ -736,14 +726,14 @@ export default function ArticlePanel() {
                     onClick={() => handleGenerate('custom')}
                     disabled={generating || !customTopic.trim()}
                   >
-                    {generating ? 'Generating...' : contentType === 'dialogue' ? 'Generate Dialogue' : 'Generate Article'}
+                    {generating ? t('generating') : contentType === 'dialogue' ? t('generateDialogue') : t('generateArticle')}
                   </button>
                   <button
                     className="btn btn-secondary shadow-md px-6 py-2 text-base rounded-lg font-semibold bg-gray-200 text-gray-700 hover:bg-indigo-50 transition disabled:opacity-60 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
                     onClick={() => handleGenerate('random')}
                     disabled={generating}
                   >
-                    Random Topic
+                    {t('randomTopic')}
                   </button>
                 </div>
               </div>
@@ -773,7 +763,7 @@ export default function ArticlePanel() {
                 </button>
                 <button
                   onClick={handleShare}
-                  title="分享"
+                  title={t('share')}
                   className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -810,7 +800,7 @@ export default function ArticlePanel() {
                   </button>
                   <button
                     onClick={handleShare}
-                    title="分享"
+                    title={t('share')}
                     className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -829,7 +819,7 @@ export default function ArticlePanel() {
         </div>
         {/* 词汇表区 */}
         <div className="w-full lg:w-80 bg-white dark:bg-[#23272f] border border-gray-200 dark:border-gray-700 p-6 rounded-xl shadow-sm min-h-[320px] flex flex-col">
-          <h2 className="text-xl font-serif text-serif mb-4 text-gray-900 dark:text-white">Vocabulary</h2>
+          <h2 className="text-xl font-serif text-serif mb-4 text-gray-900 dark:text-white">{t('vocabulary')}</h2>
           {articleState.vocabulary && articleState.vocabulary.length > 0 ? (
             <div className="space-y-4">
               {articleState.vocabulary.map((item, index) => (
@@ -841,7 +831,7 @@ export default function ArticlePanel() {
               ))}
             </div>
           ) : (
-            <div className="text-gray-400 dark:text-gray-400 text-sm text-center mt-8">暂无重点词汇</div>
+            <div className="text-gray-400 dark:text-gray-400 text-sm text-center mt-8">{t('noVocabulary')}</div>
           )}
         </div>
       </div>
