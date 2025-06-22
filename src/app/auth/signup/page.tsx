@@ -43,6 +43,7 @@ export default function SignUpPage() {
     setError(null)
 
     try {
+      // 1. 验证 OTP 并创建账号
       const apiRes = await fetch('/api/auth/verify-otp-and-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -54,26 +55,41 @@ export default function SignUpPage() {
         throw new Error(data.error || 'Sign up failed.')
       }
 
-      // We have a valid Supabase session, now sign in with NextAuth
+      console.log('Registration successful, attempting to sign in...', {
+        hasSession: !!data.session,
+        hasAccessToken: !!data.session?.access_token,
+        hasRefreshToken: !!data.session?.refresh_token
+      });
+
+      // 2. 使用 NextAuth 登录
       const signInResult = await signIn('supabase', {
         redirect: false,
         accessToken: data.session.access_token,
         refreshToken: data.session.refresh_token,
+        callbackUrl: '/',
       })
 
-      // After signIn, check the result.
-      // The most reliable way to check for failure is to see if the `ok` property is not true.
+      console.log('Sign in result:', {
+        ok: signInResult?.ok,
+        error: signInResult?.error,
+        url: signInResult?.url
+      });
+
+      // 3. 检查登录结果
       if (!signInResult?.ok) {
-        // If there's an error, it will be in signInResult.error.
-        // The authorize function will throw an error, and NextAuth catches it.
-        setError(`Sign in failed: ${signInResult?.error || 'An unknown credentials error occurred.'}`)
-        // Explicitly return to stop any further execution
-        return; 
+        const errorMessage = signInResult?.error || 'An unknown error occurred during sign in';
+        console.error('Sign in failed:', errorMessage);
+        setError(`Sign in failed: ${errorMessage}`);
+        return;
       }
       
-      // If we reach here, it means signIn was successful.
-      router.push('/')
-      router.refresh()
+      // 4. 登录成功，跳转到首页
+      console.log('Sign in successful, redirecting to home page...');
+      if (signInResult.url) {
+        window.location.href = signInResult.url;
+      } else {
+        router.push('/');
+      }
 
     } catch (err) {
       const error = err as Error
