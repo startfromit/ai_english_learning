@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import OtpInput from 'react-otp-input'
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('')
@@ -97,7 +98,7 @@ export default function SignUpPage() {
         ) : (
           <form className="mt-8 space-y-6" onSubmit={handleSignUp}>
             <div className="rounded-md shadow-sm -space-y-px">
-               <div>
+              <div>
                 <label htmlFor="name" className="sr-only">
                   Full Name
                 </label>
@@ -129,26 +130,26 @@ export default function SignUpPage() {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
-               <div>
-                <label htmlFor="otp" className="sr-only">
-                  Verification Code
-                </label>
-                <input
-                  id="otp"
-                  name="otp"
-                  type="text"
-                  required
-                  className="relative block w-full appearance-none rounded-none rounded-b-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 sm:text-sm"
-                  placeholder="Verification Code from Email"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                />
-              </div>
             </div>
+            
+            <div className="flex flex-col items-center space-y-4">
+               <label htmlFor="otp" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Enter Verification Code
+                </label>
+                <OtpInput
+                  value={otp}
+                  onChange={setOtp}
+                  numInputs={6}
+                  renderSeparator={<span className="mx-1">-</span>}
+                  renderInput={(props) => <input {...props} />}
+                   inputStyle="!w-10 sm:!w-12 h-12 text-lg rounded-md border border-gray-300 text-center text-gray-900 dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500"
+                />
+            </div>
+
             <div>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || otp.length < 6}
                 className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
               >
                 {loading ? 'Verifying...' : 'Create Account'}
@@ -158,7 +159,7 @@ export default function SignUpPage() {
         )}
 
         {error && <p className="mt-2 text-center text-sm text-red-600">{error}</p>}
-        
+
         <div className="text-sm text-center">
           <Link
             href="/auth/signin"

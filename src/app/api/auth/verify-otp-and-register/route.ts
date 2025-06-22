@@ -43,25 +43,44 @@ export async function POST(request: NextRequest) {
   
   // 2. OTP is valid, we have a session. Now update the user's password and name.
   // The user is now technically logged in, so we can use updateUser.
-  const { error: updateUserError } = await supabase.auth.updateUser({
+  const {
+    data: { user: updatedUser },
+    error: updateUserError,
+  } = await supabase.auth.updateUser({
     password: password,
     data: {
       name: name || email,
     },
   })
 
-  if (updateUserError) {
+  if (updateUserError || !updatedUser) {
     console.error('Update user error:', updateUserError)
     // Even if this fails, the user is created. We should guide them to reset password.
     return NextResponse.json(
       {
-        error: `Could not set user details: ${updateUserError.message}. Please try resetting your password.`,
+        error: `Could not set user details: ${updateUserError?.message}. Please try resetting your password.`,
       },
       { status: 500 }
     )
   }
 
-  // 3. Invalidate the session to force the user to log in with their new password.
+  // 3. Now that the auth.users record is updated,
+  // let's create a corresponding record in our public.users table.
+  const { error: publicUserError } = await supabase.from('users').insert({
+    id: updatedUser.id,
+    email: updatedUser.email,
+    name: updatedUser.user_metadata.name,
+    provider: 'credentials',
+    email_verified: true, // This is the crucial step!
+  })
+
+  if (publicUserError) {
+    console.error('Error creating public user record:', publicUserError)
+    // This is not a fatal error for the user, but it's bad for us.
+    // We'll log it but still allow the process to succeed.
+  }
+
+  // 4. Invalidate the session to force the user to log in with their new password.
   await supabase.auth.signOut()
 
   return NextResponse.json({ success: true, message: 'User created successfully' })
