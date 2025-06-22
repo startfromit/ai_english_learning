@@ -1,24 +1,21 @@
 import type { Metadata } from 'next'
-import { EB_Garamond, Lato } from 'next/font/google'
+import { Inter as FontSans } from 'next/font/google'
 import './globals.css'
+import { cn } from '@/lib/utils'
 import { AuthProvider } from '../components/AuthProvider'
 import ThemeProvider from './components/ThemeProvider'
 import Header from './components/Header'
+import Footer from './components/Footer'
 
-const ebGaramond = EB_Garamond({ 
+const fontSans = FontSans({
   subsets: ['latin'],
-  variable: '--font-eb-garamond',
-  display: 'swap',
+  variable: '--font-sans',
 })
 
-const lato = Lato({ 
-  weight: ['400', '700'],
-  subsets: ['latin'],
-  variable: '--font-lato',
-  display: 'swap',
-})
-
-
+export const metadata: Metadata = {
+  title: 'AI English Learning',
+  description: 'Learn English with AI-powered conversations and articles.',
+}
 
 export default function RootLayout({
   children,
@@ -26,14 +23,20 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={`${ebGaramond.variable} ${lato.variable} font-sans bg-[#f8f4e9] text-[#2c3e50] dark:bg-[#181c23] dark:text-gray-100`}>
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={cn(
+          'min-h-screen bg-background font-sans antialiased flex flex-col',
+          fontSans.variable
+        )}
+      >
         <AuthProvider>
           <ThemeProvider>
-            <Header />
-            <main className="container mx-auto px-4 py-8">
-              {children}
-            </main>
+            <div className="flex-grow">
+              <Header />
+              <main>{children}</main>
+            </div>
+            <Footer />
           </ThemeProvider>
         </AuthProvider>
       </body>

@@ -631,11 +631,11 @@ export default function ArticlePanel() {
         onClose={() => setShowLoginModal(false)}
         message={loginModalMessage}
       />
-      <div className="flex flex-col lg:flex-row gap-8 items-start justify-center w-full max-w-7xl mx-auto">
+      <div className="flex flex-col lg:flex-row gap-4 items-start justify-center w-full max-w-7xl mx-auto">
         {/* 左侧主区 */}
         <div className="flex-1 flex flex-col items-center">
           {/* 操作区卡片 */}
-          <div className="bg-white dark:bg-[#23272f] border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow w-full max-w-2xl mb-6 flex flex-col items-center">
+          <div className="bg-white dark:bg-[#23272f] border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow w-full max-w-2xl">
             <div className="w-full flex flex-col gap-4">
               {/* 仅自定义话题输入区 */}
               <div className="flex flex-col gap-2 w-full">
