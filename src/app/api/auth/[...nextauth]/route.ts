@@ -20,19 +20,37 @@ const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        const supabase = createClient()
-        
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: credentials?.email || '',
-          password: credentials?.password || ''
-        })
-
-        if (error) {
-          console.error('Auth error:', error.message)
+        if (!credentials?.email || !credentials?.password) {
           return null
         }
 
-        return data.user
+        const supabase = createClient()
+        
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: credentials.email,
+            password: credentials.password
+          })
+
+          if (error) {
+            console.error('Auth error:', error.message)
+            return null
+          }
+
+          if (data.user) {
+            return {
+              id: data.user.id,
+              email: data.user.email,
+              name: data.user.user_metadata?.name || data.user.email,
+              image: data.user.user_metadata?.avatar_url
+            }
+          }
+
+          return null
+        } catch (error) {
+          console.error('Unexpected auth error:', error)
+          return null
+        }
       }
     })
   ],
@@ -44,15 +62,10 @@ const authOptions: NextAuthOptions = {
         userName: user?.name 
       })
 
-      // If signing in with GitHub, handle user creation/update in Supabase
-      if (account?.provider === 'github') {
-        console.log('GitHub sign in detected')
+      // Handle user creation/update in Supabase for both GitHub and email/password
+      if (user?.email) {
+        console.log('Processing user sign in:', user.email)
         
-        if (!user.email) {
-          console.error('GitHub user has no email')
-          return '/auth/error?error=NoEmail'
-        }
-
         try {
           const supabase = createClient()
           
@@ -84,7 +97,7 @@ const authOptions: NextAuthOptions = {
                   email: user.email,
                   name: user.name,
                   avatar_url: user.image,
-                  provider: 'github'
+                  provider: account?.provider || 'credentials'
                 }
               ])
             
@@ -97,6 +110,21 @@ const authOptions: NextAuthOptions = {
             }
           } else {
             console.log('User already exists in Supabase')
+            // Update user info if needed
+            if (existingUser.name !== user.name || existingUser.avatar_url !== user.image) {
+              const { error: updateError } = await supabase
+                .from('users')
+                .update({
+                  name: user.name,
+                  avatar_url: user.image,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', user.id)
+              
+              if (updateError) {
+                console.error('Error updating user in Supabase:', updateError)
+              }
+            }
           }
         } catch (error) {
           console.error('Unexpected error in signIn callback:', error)
@@ -110,19 +138,14 @@ const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       console.log('Session callback:', { tokenId: token.id, tokenProvider: token.provider })
       
-      // For GitHub users, use NextAuth session data
-      if (token.provider === 'github') {
+      // Ensure session has user data
+      if (token) {
         session.user = {
           id: token.id as string,
           email: token.email,
           name: token.name,
           image: token.picture
         }
-      } else {
-        // For Supabase users, get session from Supabase
-        const supabase = createClient()
-        const { data } = await supabase.auth.getSession()
-        session.user = data.session?.user || null
       }
       
       return session

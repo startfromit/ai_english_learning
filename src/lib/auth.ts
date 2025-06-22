@@ -17,14 +17,8 @@ export async function getUser(): Promise<User | null> {
 }
 
 export async function signOut() {
-  // Sign out from both NextAuth and Supabase
-  const supabase = createClient()
-  
-  // Sign out from NextAuth
+  // Sign out from NextAuth (this will handle both GitHub and email/password)
   await nextAuthSignOut({ redirect: false })
-  
-  // Sign out from Supabase
-  await supabase.auth.signOut()
 }
 
 export async function canPlayAudio(): Promise<{ canPlay: boolean; remaining: number }> {

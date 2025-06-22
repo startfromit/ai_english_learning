@@ -1,9 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { User, Session } from '@supabase/supabase-js'
 import { useSession } from 'next-auth/react'
-import { createClient } from '@/lib/supabase/client'
 
 type AuthUser = {
   id: string
@@ -25,95 +23,30 @@ export const useAuth = (): AuthState => {
   })
   
   // NextAuth session
-  const { data: nextAuthSession, status: nextAuthStatus } = useSession()
+  const { data: session, status } = useSession()
 
   useEffect(() => {
-    const supabase = createClient()
-    
-    const fetchUser = async (): Promise<void> => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-        
-        if (error) throw error
-        
-        if (user) {
-          setState({
-            user: {
-              id: user.id,
-              email: user.email,
-              name: user.user_metadata?.name || user.email,
-              image: user.user_metadata?.avatar_url
-            },
-            loading: false,
-            provider: 'supabase'
-          })
-        } else {
-          setState({
-            user: null,
-            loading: false,
-            provider: 'supabase'
-          })
-        }
-      } catch (error) {
-        console.error('Error fetching Supabase user:', error)
-        setState({
-          user: null,
-          loading: false,
-          provider: 'supabase'
-        })
-      }
-    }
-    
-    // If NextAuth session exists, use it
-    if (nextAuthSession?.user) {
+    if (status === 'loading') {
+      setState(prev => ({ ...prev, loading: true }))
+    } else if (session?.user) {
       setState({
         user: {
-          id: nextAuthSession.user.id || '',
-          email: nextAuthSession.user.email,
-          name: nextAuthSession.user.name,
-          image: nextAuthSession.user.image
+          id: session.user.id || '',
+          email: session.user.email,
+          name: session.user.name,
+          image: session.user.image
         },
         loading: false,
-        provider: 'github'
+        provider: 'nextauth'
       })
-    } else if (nextAuthStatus === 'loading') {
-      // Still loading NextAuth
-      setState(prev => ({ ...prev, loading: true }))
     } else {
-      // No NextAuth session, try Supabase
-      fetchUser()
+      setState({
+        user: null,
+        loading: false,
+        provider: 'nextauth'
+      })
     }
-    
-    // Set up Supabase auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event: string, session: Session | null) => {
-        if (!nextAuthSession?.user) { // Only update if no NextAuth session
-          if (session?.user) {
-            setState({
-              user: {
-                id: session.user.id,
-                email: session.user.email,
-                name: session.user.user_metadata?.name || session.user.email,
-                image: session.user.user_metadata?.avatar_url
-              },
-              loading: false,
-              provider: 'supabase'
-            })
-          } else {
-            setState({
-              user: null,
-              loading: false,
-              provider: 'supabase'
-            })
-          }
-        }
-      }
-    )
-    
-    return () => {
-      subscription?.unsubscribe()
-    }
-  }, [nextAuthSession, nextAuthStatus])
+  }, [session, status])
 
   return state
 }

@@ -2,18 +2,20 @@
 
 import { useState, FormEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 
 type FormState = {
   email: string
   password: string
   confirmPassword: string
+  name: string
 }
 
 type FormErrors = {
   email?: string
   password?: string
   confirmPassword?: string
+  name?: string
   form?: string
 }
 
@@ -21,18 +23,22 @@ export default function SignUp() {
   const [formData, setFormData] = useState<FormState>({
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    name: ''
   })
   const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
   const redirectTo = searchParams?.get('redirectedFrom') || '/profile'
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {}
-    const { email, password, confirmPassword } = formData
+    const { email, password, confirmPassword, name } = formData
+
+    if (!name.trim()) {
+      newErrors.name = 'Name is required'
+    }
 
     if (!email) {
       newErrors.email = 'Email is required'
@@ -73,24 +79,35 @@ export default function SignUp() {
     setErrors({})
 
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
-        }
+      // Register user using our API
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          name: formData.name
+        }),
       })
 
+      const data = await response.json()
 
-      if (signUpError) throw signUpError
-      
-      // Sign in the user after successful sign up
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      if (!response.ok) {
+        throw new Error(data.error || 'Registration failed')
+      }
+
+      // Sign in the user after successful registration
+      const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
+        redirect: false,
       })
 
-      if (signInError) throw signInError
+      if (result?.error) {
+        throw new Error(result.error)
+      }
       
       router.push(redirectTo)
       router.refresh()
@@ -131,6 +148,32 @@ export default function SignUp() {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit} noValidate>
           <div className="rounded-md shadow-sm space-y-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                Full Name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                required
+                className={`appearance-none relative block w-full px-3 py-2 border ${
+                  errors.name ? 'border-red-300' : 'border-gray-300'
+                } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
+                placeholder="John Doe"
+                value={formData.name}
+                onChange={handleChange}
+                aria-invalid={!!errors.name}
+                aria-describedby={errors.name ? 'name-error' : undefined}
+              />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-600" id="name-error">
+                  {errors.name}
+                </p>
+              )}
+            </div>
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email address
@@ -212,37 +255,25 @@ export default function SignUp() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <a 
-                href={`/auth/signin${redirectTo ? `?redirectedFrom=${encodeURIComponent(redirectTo)}` : ''}`}
-                className="font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                Already have an account? Sign in
-              </a>
-            </div>
-          </div>
-
           <div>
             <button
               type="submit"
               disabled={isLoading}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                isLoading ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'
-              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50`}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Creating account...
-                </>
-              ) : 'Sign up'}
+              {isLoading ? 'Creating account...' : 'Create account'}
             </button>
           </div>
         </form>
+
+        <div className="text-center">
+          <p className="text-sm text-gray-600">
+            Already have an account?{' '}
+            <a href={`/auth/signin?redirectedFrom=${encodeURIComponent(redirectTo)}`} className="font-medium text-indigo-600 hover:text-indigo-500">
+              Sign in
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   )

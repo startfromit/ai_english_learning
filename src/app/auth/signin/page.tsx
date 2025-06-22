@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { signIn, getSession } from 'next-auth/react'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -13,7 +12,6 @@ export default function SignIn() {
   const [githubLoading, setGithubLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
   const redirectTo = searchParams?.get('redirectedFrom') || '/'
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -22,15 +20,18 @@ export default function SignIn() {
     setError('')
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const result = await signIn('credentials', {
         email,
         password,
+        redirect: false,
       })
 
-      if (error) throw error
-      
-      router.push(redirectTo)
-      router.refresh()
+      if (result?.error) {
+        setError(result.error)
+      } else if (result?.ok) {
+        router.push(redirectTo)
+        router.refresh()
+      }
     } catch (err: any) {
       setError(err.message || 'An error occurred')
     } finally {
