@@ -8,11 +8,11 @@ export interface TTSOptions {
 
 export async function getTTSUrl({ text, voice, engine }: TTSOptions): Promise<string | null> {
   if (engine === 'ttsmaker') {
-    // TTSMaker
-    const res = await fetch('https://api.ttsmaker.com/v1/tts', {
+    // TTSMaker - 通过我们自己的API来检查播放次数
+    const res = await fetch('/api/ttsmaker-tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, voice, lang: 'en', format: 'mp3' }),
+      body: JSON.stringify({ text, voice }),
     });
     if (!res.ok) return null;
     const data = await res.json();

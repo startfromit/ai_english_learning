@@ -2,47 +2,50 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getRemainingPlays } from '@/lib/auth'
 import { useAuth } from '@/hooks/useAuth'
 import AuthGuard from '@/components/AuthGuard'
 import Link from 'next/link'
 
 function ProfileContent() {
-  const { user, provider } = useAuth()
+  const { user, loading } = useAuth()
   const [remainingPlays, setRemainingPlays] = useState<number>(0)
-  const [loading, setLoading] = useState(true)
+  const [loadingPlays, setLoadingPlays] = useState(true)
   const router = useRouter()
 
-  useEffect(() => {
-    const fetchRemainingPlays = async () => {
-      if (!user) return
-      
-      try {
-        const plays = await getRemainingPlays()
-        setRemainingPlays(plays)
-      } catch (error) {
-        console.error('Error fetching remaining plays:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
+  const fetchRemainingPlays = async () => {
+    if (!user) return
     
+    try {
+      const response = await fetch('/api/get-remaining-plays')
+      if (response.ok) {
+        const data = await response.json()
+        setRemainingPlays(data.remainingPlays)
+      } else {
+        console.error('Failed to fetch remaining plays')
+      }
+    } catch (error) {
+      console.error('Error fetching remaining plays:', error)
+    } finally {
+      setLoadingPlays(false)
+    }
+  }
+
+  useEffect(() => {
     fetchRemainingPlays()
   }, [user])
   
   const refreshPlays = async () => {
     try {
-      setLoading(true)
-      const plays = await getRemainingPlays()
-      setRemainingPlays(plays)
+      setLoadingPlays(true)
+      await fetchRemainingPlays()
     } catch (error) {
       console.error('Error refreshing plays:', error)
     } finally {
-      setLoading(false)
+      setLoadingPlays(false)
     }
   }
 
-  if (loading || !user) {
+  if (loading || loadingPlays || !user) {
     return (
       <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div className="animate-pulse space-y-4">
@@ -60,10 +63,10 @@ function ProfileContent() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Your Profile</h1>
         <button
           onClick={refreshPlays}
-          disabled={loading}
+          disabled={loadingPlays}
           className="text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 disabled:opacity-50 px-3 py-1 border border-indigo-200 dark:border-indigo-800 rounded-md"
         >
-          {loading ? 'Refreshing...' : 'Refresh'}
+          {loadingPlays ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
       
@@ -76,9 +79,6 @@ function ProfileContent() {
             </p>
             <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
               <span className="font-medium">Name:</span> {user?.name || 'Not provided'}
-            </p>
-            <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
-              <span className="font-medium">Sign-in method:</span> {provider === 'github' ? 'GitHub' : 'Email/Password'}
             </p>
           </div>
         </div>

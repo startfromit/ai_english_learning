@@ -79,6 +79,10 @@ function VocabularyNav() {
       // 订阅词汇总量更新
       const unsubscribe = subscribeToVocabularyCount(setVocabularyCount)
       return unsubscribe
+    } else {
+      // 用户未登录时，重置词汇数量
+      setVocabularyCount(0)
+      updateVocabularyCount(0)
     }
   }, [user])
 
@@ -98,7 +102,7 @@ function VocabularyNav() {
     >
       <BookOpenIcon className="w-5 h-5" />
       <span>{t('vocabulary', '生词本')}</span>
-      {vocabularyCount > 0 && (
+      {user && vocabularyCount > 0 && (
         <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
           {vocabularyCount > 99 ? '99+' : vocabularyCount}
         </span>

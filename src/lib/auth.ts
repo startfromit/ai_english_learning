@@ -5,24 +5,56 @@ import { createClient } from '@/lib/supabase/client';
 import { Database } from './supabase/database'
 import { signOut as nextAuthSignOut } from 'next-auth/react'
 import { User } from '@supabase/supabase-js';
+import { headers } from 'next/headers'
+import { NextRequest } from 'next/server'
 
 type UserUsage = Database['public']['Tables']['user_usage']['Row']
 type UserProfile = Database['public']['Tables']['users']['Row']
 
 export async function getSession() {
-  return await getServerSession(authOptions);
-}
-
-export async function getCurrentUser(): Promise<User | null> {
-  const supabase = createClient();
-  const { data, error } = await supabase.auth.getUser();
-
-  if (error) {
-    console.error("Error getting current user from Supabase:", error.message);
+  try {
+    const session = await getServerSession(authOptions);
+    return session;
+  } catch (error) {
+    console.error('Error getting session:', error);
     return null;
   }
+}
 
-  return data.user;
+// 专门用于API路由的函数
+export async function getCurrentUserFromRequest(req: NextRequest): Promise<{ id: string; email: string | null } | null> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return null;
+    }
+    
+    return {
+      id: session.user.id,
+      email: session.user.email || null
+    };
+  } catch (error) {
+    console.error('Error getting current user from request:', error);
+    return null;
+  }
+}
+
+export async function getCurrentUser(): Promise<{ id: string; email: string | null } | null> {
+  try {
+    // 在API路由中，我们需要从请求头中获取用户信息
+    const session = await getSession() as any;
+    if (!session?.user?.id) {
+      return null;
+    }
+    
+    return {
+      id: session.user.id,
+      email: session.user.email || null
+    };
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    return null;
+  }
 }
 
 export async function getUserProfile(): Promise<UserProfile | null> {
@@ -45,63 +77,72 @@ export async function signOut() {
 }
 
 export async function canPlayAudio(): Promise<{ canPlay: boolean; remaining: number }> {
-  const user = await getCurrentUser()
-  if (!user) return { canPlay: false, remaining: 0 }
+  try {
+    const user = await getCurrentUser()
+    if (!user) return { canPlay: false, remaining: 0 }
 
-  const supabase = createClient()
-  const today = new Date().toISOString().split('T')[0]
-  
-  // Get or create user usage record
-  const { data: usage, error } = await supabase
-    .from('user_usage')
-    .select('play_count, usage_date')
-    .eq('user_id', user.id)
-    .eq('usage_date', today)
-    .single() as { data: UserUsage | null; error: any }
-
-  const MAX_DAILY_PLAYS = 10
-  
-  // If no record exists or it's a new day, reset the counter
-  if (!usage || usage.usage_date !== today) {
-    const { error: upsertError } = await supabase
-      .from('user_usage')
-      .upsert({
-        user_id: user.id,
-        play_count: 1,
-        usage_date: today,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id,usage_date',
-        ignoreDuplicates: false
-      })
+    const supabase = createClient()
+    const today = new Date().toISOString().split('T')[0]
     
-    if (upsertError) {
-      console.error('Error updating user usage:', upsertError)
+    // Get or create user usage record
+    const { data: usage, error } = await supabase
+      .from('user_usage')
+      .select('play_count, usage_date')
+      .eq('user_id', user.id)
+      .eq('usage_date', today)
+      .single() as { data: UserUsage | null; error: any }
+
+    const MAX_DAILY_PLAYS = 10
+    
+    // If no record exists or it's a new day, reset the counter
+    if (!usage || usage.usage_date !== today) {
+      const { error: upsertError } = await supabase
+        .from('user_usage')
+        .upsert({
+          user_id: user.id,
+          play_count: 1,
+          usage_date: today,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,usage_date',
+          ignoreDuplicates: false
+        })
+      
+      if (upsertError) {
+        console.error('Error updating user usage:', upsertError)
+        return { canPlay: false, remaining: 0 }
+      }
+      
+      return { canPlay: true, remaining: MAX_DAILY_PLAYS - 1 }
+    }
+    
+    // Check if user has reached the limit
+    if (usage.play_count >= MAX_DAILY_PLAYS) {
       return { canPlay: false, remaining: 0 }
     }
     
-    return { canPlay: true, remaining: MAX_DAILY_PLAYS - 1 }
-  }
-  
-  // Check if user has reached the limit
-  if (usage.play_count >= MAX_DAILY_PLAYS) {
+    // Increment the play count directly
+    const { error: updateError } = await supabase
+      .from('user_usage')
+      .update({
+        play_count: usage.play_count + 1,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user.id)
+      .eq('usage_date', today)
+    
+    if (updateError) {
+      console.error('Error incrementing play count:', updateError)
+      return { canPlay: false, remaining: 0 }
+    }
+    
+    return { 
+      canPlay: true, 
+      remaining: MAX_DAILY_PLAYS - (usage.play_count + 1)
+    }
+  } catch (error) {
+    console.error('Error in canPlayAudio:', error)
     return { canPlay: false, remaining: 0 }
-  }
-  
-  // Increment the play count using the RPC function
-  const { error: incrementError } = await supabase.rpc('increment_play_count', {
-    user_id: user.id,
-    usage_date: today
-  })
-  
-  if (incrementError) {
-    console.error('Error incrementing play count:', incrementError)
-    return { canPlay: false, remaining: 0 }
-  }
-  
-  return { 
-    canPlay: true, 
-    remaining: MAX_DAILY_PLAYS - (usage.play_count + 1)
   }
 }
 
