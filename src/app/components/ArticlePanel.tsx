@@ -90,7 +90,8 @@ export default function ArticlePanel() {
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null)
   const audioCache = useRef<Map<string, string | undefined>>(new Map())
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [generating, setGenerating] = useState(false)
+  const [generatingCustom, setGeneratingCustom] = useState(false)
+  const [generatingRandom, setGeneratingRandom] = useState(false)
   const [customLength, setCustomLength] = useState(300);
   const [placeholder, setPlaceholder] = useState(RANDOM_TOPICS[0]);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -626,7 +627,12 @@ export default function ArticlePanel() {
       setShowLoginModal(true);
       return;
     }
-    setGenerating(true);
+    // 设置对应按钮的加载状态
+    if (mode === 'custom') {
+      setGeneratingCustom(true);
+    } else {
+      setGeneratingRandom(true);
+    }
     try {
       const body: any = { 
         length: customLength,
@@ -680,7 +686,12 @@ export default function ArticlePanel() {
     } catch (e) {
       alert(t('generationFailed'));
     }
-    setGenerating(false);
+    // 设置对应按钮的加载状态
+    if (mode === 'custom') {
+      setGeneratingCustom(false);
+    } else {
+      setGeneratingRandom(false);
+    }
   }
 
   function handleShare() {
@@ -788,7 +799,7 @@ export default function ArticlePanel() {
                               type="button"
                               className="px-2 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-200 hover:bg-indigo-100 dark:hover:bg-indigo-800 border border-gray-200 dark:border-gray-600 transition"
                               onClick={() => setCustomTopic(sug)}
-                              disabled={generating}
+                              disabled={generatingCustom || generatingRandom}
                             >
                               {sug}
                             </button>
@@ -808,7 +819,7 @@ export default function ArticlePanel() {
                               value="article"
                               checked={contentType === 'article'}
                               onChange={(e) => setContentType(e.target.value as 'article' | 'dialogue')}
-                              disabled={generating}
+                              disabled={generatingCustom || generatingRandom}
                               className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                             />
                             <span className="text-sm text-gray-700 dark:text-gray-200">{t('article')}</span>
@@ -820,7 +831,7 @@ export default function ArticlePanel() {
                               value="dialogue"
                               checked={contentType === 'dialogue'}
                               onChange={(e) => setContentType(e.target.value as 'article' | 'dialogue')}
-                              disabled={generating}
+                              disabled={generatingCustom || generatingRandom}
                               className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                             />
                             <span className="text-sm text-gray-700 dark:text-gray-200">{t('dialogue')}</span>
@@ -845,7 +856,7 @@ export default function ArticlePanel() {
                                   value={key}
                                   checked={dialogueStyle === key}
                                   onChange={(e) => setDialogueStyle(e.target.value as 'casual' | 'business' | 'social')}
-                                  disabled={generating}
+                                  disabled={generatingCustom || generatingRandom}
                                   className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                                 />
                                 <div className="flex flex-col">
@@ -869,7 +880,7 @@ export default function ArticlePanel() {
                             step={10}
                             value={customLength}
                             onChange={e => setCustomLength(Number(e.target.value))}
-                            disabled={generating}
+                            disabled={generatingCustom || generatingRandom}
                             className="accent-indigo-500 max-w-xs w-full bg-white dark:bg-[#23272f]"
                             style={{ minWidth: 120 }}
                           />
@@ -879,16 +890,16 @@ export default function ArticlePanel() {
                           <button
                             className="btn btn-primary shadow-md px-6 py-2 text-base rounded-lg font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition disabled:opacity-60 dark:bg-indigo-700 dark:hover:bg-indigo-800"
                             onClick={() => handleGenerate('custom')}
-                            disabled={generating || !customTopic.trim()}
+                            disabled={generatingCustom || !customTopic.trim()}
                           >
-                            {generating ? t('generating') : contentType === 'dialogue' ? t('generateDialogue') : t('generateArticle')}
+                            {generatingCustom ? t('generating') : contentType === 'dialogue' ? t('generateDialogue') : t('generateArticle')}
                           </button>
                           <button
                             className="btn btn-secondary shadow-md px-6 py-2 text-base rounded-lg font-semibold bg-gray-200 text-gray-700 hover:bg-indigo-50 transition disabled:opacity-60 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
                             onClick={() => handleGenerate('random')}
-                            disabled={generating}
+                            disabled={generatingRandom}
                           >
-                            {t('randomTopic')}
+                            {generatingRandom ? t('generating') : t('randomTopic')}
                           </button>
                         </div>
                       </div>
