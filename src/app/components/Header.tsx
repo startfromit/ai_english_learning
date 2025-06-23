@@ -1,13 +1,38 @@
 'use client'
 import Link from 'next/link'
 import AuthNav from '@/components/AuthNav'
-import { useContext } from 'react'
+import { useContext, useState, useEffect } from 'react'
 import { ThemeContext } from './ThemeProvider'
 import LocaleSwitcher from './LocaleSwitcher'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { BookOpenIcon } from '@heroicons/react/24/outline'
 import { useTranslation } from 'react-i18next'
+
+// 全局状态管理词汇总量
+let globalVocabularyCount = 0
+let listeners: ((count: number) => void)[] = []
+
+export const updateVocabularyCount = (count: number) => {
+  console.log('Updating vocabulary count:', count)
+  globalVocabularyCount = count
+  listeners.forEach(listener => listener(count))
+}
+
+export const subscribeToVocabularyCount = (listener: (count: number) => void) => {
+  listeners.push(listener)
+  // 立即返回当前值
+  listener(globalVocabularyCount)
+  return () => {
+    listeners = listeners.filter(l => l !== listener)
+  }
+}
+
+export const incrementVocabularyCount = () => {
+  const newCount = globalVocabularyCount + 1
+  console.log('Incrementing vocabulary count from', globalVocabularyCount, 'to', newCount)
+  updateVocabularyCount(newCount)
+}
 
 function ThemeToggle() {
   const { themeMode, setThemeMode } = useContext(ThemeContext)
@@ -37,6 +62,25 @@ function VocabularyNav() {
   const { user } = useAuth()
   const router = useRouter()
   const { t } = useTranslation()
+  const [vocabularyCount, setVocabularyCount] = useState(0)
+
+  useEffect(() => {
+    if (user) {
+      // 获取初始词汇总量
+      fetch('/api/vocabulary/get?limit=1')
+        .then(response => response.json())
+        .then(result => {
+          const count = result.pagination?.total || 0
+          setVocabularyCount(count)
+          updateVocabularyCount(count)
+        })
+        .catch(console.error)
+
+      // 订阅词汇总量更新
+      const unsubscribe = subscribeToVocabularyCount(setVocabularyCount)
+      return unsubscribe
+    }
+  }, [user])
 
   const handleVocabularyClick = () => {
     if (user) {
@@ -49,10 +93,16 @@ function VocabularyNav() {
   return (
     <button
       onClick={handleVocabularyClick}
-      className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 transition-colors font-medium"
+      data-vocabulary-button
+      className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 transition-colors font-medium relative"
     >
       <BookOpenIcon className="w-5 h-5" />
       <span>{t('vocabulary', '生词本')}</span>
+      {vocabularyCount > 0 && (
+        <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+          {vocabularyCount > 99 ? '99+' : vocabularyCount}
+        </span>
+      )}
     </button>
   )
 }

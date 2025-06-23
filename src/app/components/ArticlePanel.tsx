@@ -14,6 +14,8 @@ import DialoguePanel from './DialoguePanel';
 import { RANDOM_TOPICS, getRandomTopics } from '@/lib/topics';
 import { useTranslation } from 'react-i18next'
 import { getRandomArticle, getRandomDialogue } from '@/lib/content'
+import FlyingStar from './FlyingStar'
+import { updateVocabularyCount, incrementVocabularyCount } from './Header'
 
 interface Sentence {
   english: string
@@ -97,6 +99,11 @@ export default function ArticlePanel() {
   const [highlightedVocab, setHighlightedVocab] = useState<string | null>(null);
   const [userVocabulary, setUserVocabulary] = useState<VocabularyItem[]>([]);
   const [vocabStatus, setVocabStatus] = useState<Record<string, 'idle' | 'loading' | 'added'>>({});
+  const [flyingStar, setFlyingStar] = useState<{
+    word: string;
+    startPosition: { x: number; y: number };
+    endPosition: { x: number; y: number };
+  } | null>(null);
   
   useEffect(() => {
     if (user) {
@@ -138,12 +145,62 @@ export default function ArticlePanel() {
         throw new Error(error || 'Failed to add vocabulary');
       }
       setVocabStatus(prev => ({ ...prev, [item.word]: 'added' }));
-      // Optionally show a success toast or animation
+      
+      // 更新词汇总量
+      incrementVocabularyCount();
+      console.log('Vocabulary added successfully, count incremented');
+      
+      // 触发飞行动画
+      triggerFlyingStar(item.word);
+      
     } catch (error) {
       console.error(error);
       setVocabStatus(prev => ({ ...prev, [item.word]: 'idle' }));
-      // Optionally show a toast notification for the error
     }
+  };
+
+  const triggerFlyingStar = (word: string) => {
+    console.log('Triggering flying star for word:', word);
+    
+    // 使用setTimeout确保DOM已经更新
+    setTimeout(() => {
+      // 获取生词本按钮的位置
+      const vocabularyButton = document.querySelector('[data-vocabulary-button]') as HTMLElement;
+      if (!vocabularyButton) {
+        console.error('Vocabulary button not found');
+        return;
+      }
+
+      const buttonRect = vocabularyButton.getBoundingClientRect();
+      const endPosition = {
+        x: buttonRect.left + buttonRect.width / 2,
+        y: buttonRect.top + buttonRect.height / 2,
+      };
+      console.log('End position:', endPosition);
+
+      // 获取当前点击的收藏按钮位置 - 使用更精确的选择器
+      const vocabItem = document.querySelector(`[data-word="${word}"]`) as HTMLElement;
+      if (!vocabItem) {
+        console.error('Vocabulary item not found for word:', word);
+        return;
+      }
+
+      const starButton = vocabItem.querySelector('button') as HTMLElement;
+      if (!starButton) {
+        console.error('Star button not found for word:', word);
+        return;
+      }
+
+      const starRect = starButton.getBoundingClientRect();
+      const startPosition = {
+        x: starRect.left + starRect.width / 2,
+        y: starRect.top + starRect.height / 2,
+      };
+      console.log('Start position:', startPosition);
+
+      console.log('Setting flying star with:', { word, startPosition, endPosition });
+      setFlyingStar({ word, startPosition, endPosition });
+    }, 100); // 100ms延迟确保DOM更新
   };
   
   // Initialize customLength from localStorage after mount
@@ -1011,6 +1068,7 @@ export default function ArticlePanel() {
               {(contentType === 'article' ? articleState.vocabulary : dialogueState.vocabulary).map((item, index) => (
                 <div 
                   key={index} 
+                  data-word={item.word}
                   className={`mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg transition-colors duration-200 ${
                     highlightedVocab === item.word ? 'bg-yellow-200/50 dark:bg-yellow-700/30' : ''
                   }`}
@@ -1059,6 +1117,16 @@ export default function ArticlePanel() {
           )}
         </div>
       </div>
+      
+      {/* 飞行动画 */}
+      {flyingStar && (
+        <FlyingStar
+          word={flyingStar.word}
+          startPosition={flyingStar.startPosition}
+          endPosition={flyingStar.endPosition}
+          onComplete={() => setFlyingStar(null)}
+        />
+      )}
     </div>
   )
 } 
