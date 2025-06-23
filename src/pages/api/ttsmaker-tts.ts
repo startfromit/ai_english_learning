@@ -53,8 +53,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } else {
     // Check if user has reached the limit
     if (usage.daily_play_count >= MAX_DAILY_PLAYS) {
+      const acceptLanguage = req.headers['accept-language'] || '';
+      const isChinese = acceptLanguage.includes('zh') || acceptLanguage.includes('zh-CN') || acceptLanguage.includes('zh-TW');
+      
+      const message = isChinese 
+        ? '可用播放次数不足，目前未开放充值渠道，请明日再试'
+        : 'Insufficient play credits. Recharge feature is not available yet. Please try again tomorrow.';
+      
       res.status(429).json({ 
         error: 'Daily play limit reached', 
+        message,
         remaining: 0 
       });
       return;

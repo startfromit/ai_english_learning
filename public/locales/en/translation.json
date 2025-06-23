@@ -44,5 +44,6 @@
   "of": "of",
   "favorite": "Favorite",
   "unfavorite": "Unfavorite",
-  "favorited": "Favorited"
+  "favorited": "Favorited",
+  "Failed to generate audio. Please try again.": "Insufficient play credits. Recharge feature is not available yet. Please try again tomorrow."
 } 

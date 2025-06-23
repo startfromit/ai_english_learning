@@ -6,14 +6,27 @@ export interface TTSOptions {
   engine: TTSEngine;
 }
 
+export interface TTSError {
+  error: string;
+  message: string;
+  remaining?: number;
+}
+
 export async function getTTSUrl({ text, voice, engine }: TTSOptions): Promise<string | null> {
   if (engine === 'ttsmaker') {
     // TTSMaker - 通过我们自己的API来检查播放次数
     const res = await fetch('/api/ttsmaker-tts', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept-Language': navigator.language || 'en'
+      },
       body: JSON.stringify({ text, voice }),
     });
+    if (res.status === 429) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || 'Daily play limit reached');
+    }
     if (!res.ok) return null;
     const data = await res.json();
     return data?.url || null;
@@ -23,9 +36,16 @@ export async function getTTSUrl({ text, voice, engine }: TTSOptions): Promise<st
     // 推荐：将此请求转发到你自己的 serverless API，避免密钥泄露
     const res = await fetch('/api/azure-tts', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept-Language': navigator.language || 'en'
+      },
       body: JSON.stringify({ text, voice }),
     });
+    if (res.status === 429) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || 'Daily play limit reached');
+    }
     if (!res.ok) return null;
     const data = await res.json();
     return data?.url || null;

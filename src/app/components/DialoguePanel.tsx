@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SpeakerWaveIcon } from '@heroicons/react/24/outline';
 import { getTTSUrl, TTSEngine } from '../lib/tts';
+import { useTranslation } from 'react-i18next';
+import LimitBanner from './LimitBanner';
 
 interface DialogueMessage {
   speaker: string;
@@ -37,8 +39,11 @@ const DialoguePanel: React.FC<DialoguePanelProps> = ({
   isPlayingAll = false, 
   playingIndex = null 
 }) => {
+  const { t } = useTranslation();
   const [showChinese, setShowChinese] = useState<{ [key: number]: boolean }>({});
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
+  const [showLimitBanner, setShowLimitBanner] = useState(false);
+  const [limitBannerMessage, setLimitBannerMessage] = useState('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioCache = useRef<Map<string, string | undefined>>(new Map());
   const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -92,6 +97,11 @@ const DialoguePanel: React.FC<DialoguePanelProps> = ({
         }
       } catch (error) {
         console.error('TTS failed:', error);
+        if (error instanceof Error && error.message.includes('Daily play limit reached')) {
+          showLimitBannerWithMessage(error.message);
+        } else {
+          showLimitBannerWithMessage(t('Failed to generate audio. Please try again.'));
+        }
         setLoadingIndex(null);
         return;
       }
@@ -114,8 +124,22 @@ const DialoguePanel: React.FC<DialoguePanelProps> = ({
     }));
   };
 
+  const showLimitBannerWithMessage = (message: string) => {
+    setLimitBannerMessage(message);
+    setShowLimitBanner(true);
+  };
+
+  const hideLimitBanner = () => {
+    setShowLimitBanner(false);
+  };
+
   return (
     <div className="w-full">
+      <LimitBanner 
+        isVisible={showLimitBanner}
+        onClose={hideLimitBanner}
+        message={limitBannerMessage}
+      />
       <audio ref={audioRef} />
       
       {/* 对话内容区域 */}

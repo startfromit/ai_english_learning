@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next'
 import { getRandomArticle, getRandomDialogue } from '@/lib/content'
 import FlyingStar from './FlyingStar'
 import { updateVocabularyCount, incrementVocabularyCount } from './Header'
+import LimitBanner from './LimitBanner'
 
 interface Sentence {
   english: string
@@ -105,6 +106,8 @@ export default function ArticlePanel() {
     startPosition: { x: number; y: number };
     endPosition: { x: number; y: number };
   } | null>(null);
+  const [showLimitBanner, setShowLimitBanner] = useState(false);
+  const [limitBannerMessage, setLimitBannerMessage] = useState('');
   
   useEffect(() => {
     if (user) {
@@ -325,7 +328,9 @@ export default function ArticlePanel() {
     setLoadingIndex(idx);
     const cacheKey = text + currentVoice + engine + currentSpeed;
     let url: string | null | undefined = getAudioCache(cacheKey);
+    console.log(`Single sentence ${idx}: "${text.substring(0, 30)}..." - Cache: ${url ? 'HIT' : 'MISS'}`);
     if (!url) {
+      console.log(`Calling TTS API for single sentence ${idx}`);
       let ttsText = text;
       let voice = currentVoice;
       let extra: any = {};
@@ -333,8 +338,24 @@ export default function ArticlePanel() {
         ttsText = getAzureSsml(text, currentVoice, currentSpeed);
         extra.ssml = true;
       }
-      url = await getTTSUrl({ text: ttsText, voice, engine, ...extra });
-      if (url) setAudioCache(cacheKey, url);
+      try {
+        url = await getTTSUrl({ text: ttsText, voice, engine, ...extra });
+        if (url) {
+          console.log(`Caching audio for single sentence ${idx}`);
+          setAudioCache(cacheKey, url);
+        }
+      } catch (error) {
+        console.error('TTS Error:', error);
+        if (error instanceof Error && error.message.includes('Daily play limit reached')) {
+          showLimitBannerWithMessage(error.message);
+        } else {
+          showLimitBannerWithMessage(t('Failed to generate audio. Please try again.'));
+        }
+        setLoadingIndex(null);
+        return;
+      }
+    } else {
+      console.log(`Using cached audio for single sentence ${idx}`);
     }
     setLoadingIndex(null);
     if (audioRef.current) {
@@ -424,10 +445,31 @@ export default function ArticlePanel() {
         const voice = msg.gender === 'male' ? 'en-US-AndrewMultilingualNeural' : 'en-US-CoraMultilingualNeural';
         const cacheKey = msg.english + voice + 'azure' + 'normal';
         const cached = getAudioCache(cacheKey);
-        if (cached) return Promise.resolve(cached);
+        console.log(`Dialogue message ${i}: "${msg.english.substring(0, 30)}..." - Cache: ${cached ? 'HIT' : 'MISS'}`);
+        if (cached) {
+          // 如果有缓存，直接返回缓存的URL，不调用getTTSUrl
+          console.log(`Using cached audio for dialogue message ${i}`);
+          return Promise.resolve(cached);
+        }
+        // 只有在没有缓存时才调用getTTSUrl
+        console.log(`Calling TTS API for dialogue message ${i}`);
         return getTTSUrl({ text: msg.english, voice, engine: 'azure' }).then(url => {
-          if (url) setAudioCache(cacheKey, url);
+          if (url) {
+            console.log(`Caching audio for dialogue message ${i}`);
+            setAudioCache(cacheKey, url);
+          }
           return url || '';
+        }).catch(error => {
+          console.error('TTS Error:', error);
+          if (error instanceof Error && error.message.includes('Daily play limit reached')) {
+            showLimitBannerWithMessage(error.message);
+          } else {
+            showLimitBannerWithMessage(t('Failed to generate audio. Please try again.'));
+          }
+          playAllAbortRef.current.aborted = true;
+          setIsPlayingAll(false);
+          setPlayingIndex(null);
+          throw error;
         });
       });
 
@@ -463,7 +505,14 @@ export default function ArticlePanel() {
       const audioPromises = articleState.sentences.map((s, i) => {
         const cacheKey = s.english + currentVoice + engine + currentSpeed;
         const cached = getAudioCache(cacheKey);
-        if (cached) return Promise.resolve(cached);
+        console.log(`Sentence ${i}: "${s.english.substring(0, 30)}..." - Cache: ${cached ? 'HIT' : 'MISS'}`);
+        if (cached) {
+          // 如果有缓存，直接返回缓存的URL，不调用getTTSUrl
+          console.log(`Using cached audio for sentence ${i}`);
+          return Promise.resolve(cached);
+        }
+        // 只有在没有缓存时才调用getTTSUrl
+        console.log(`Calling TTS API for sentence ${i}`);
         let ttsText = s.english;
         let voice = currentVoice;
         let extra: any = {};
@@ -472,8 +521,22 @@ export default function ArticlePanel() {
           extra.ssml = true;
         }
         return getTTSUrl({ text: ttsText, voice, engine, ...extra }).then(url => {
-          if (url) setAudioCache(cacheKey, url);
+          if (url) {
+            console.log(`Caching audio for sentence ${i}`);
+            setAudioCache(cacheKey, url);
+          }
           return url || '';
+        }).catch(error => {
+          console.error('TTS Error:', error);
+          if (error instanceof Error && error.message.includes('Daily play limit reached')) {
+            showLimitBannerWithMessage(error.message);
+          } else {
+            showLimitBannerWithMessage(t('Failed to generate audio. Please try again.'));
+          }
+          playAllAbortRef.current.aborted = true;
+          setIsPlayingAll(false);
+          setPlayingIndex(null);
+          throw error;
         });
       });
 
@@ -726,6 +789,15 @@ export default function ArticlePanel() {
     return () => clearInterval(interval);
   }, []);
 
+  const showLimitBannerWithMessage = (message: string) => {
+    setLimitBannerMessage(message)
+    setShowLimitBanner(true)
+  }
+
+  const hideLimitBanner = () => {
+    setShowLimitBanner(false)
+  }
+
   return (
     <div className={themeMode === 'light' ? 'bg-[#f8f4e9] text-gray-900' : 'bg-[#181c23] text-gray-100 transition-colors duration-300'}>
       <audio ref={audioRef} />
@@ -733,6 +805,11 @@ export default function ArticlePanel() {
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         message={loginModalMessage}
+      />
+      <LimitBanner 
+        isVisible={showLimitBanner}
+        onClose={hideLimitBanner}
+        message={limitBannerMessage}
       />
       <div className="flex flex-col lg:flex-row gap-4 items-start justify-center w-full max-w-7xl mx-auto">
         {/* 左侧主区 */}

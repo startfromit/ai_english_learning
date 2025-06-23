@@ -44,5 +44,6 @@
   "of": "共",
   "favorite": "收藏",
   "unfavorite": "取消收藏",
-  "favorited": "已收藏"
+  "favorited": "已收藏",
+  "Failed to generate audio. Please try again.": "可用播放次数不足，目前未开放充值渠道，请明日再试"
 } 
