@@ -4,6 +4,9 @@ import AuthNav from '@/components/AuthNav'
 import { useContext } from 'react'
 import { ThemeContext } from './ThemeProvider'
 import LocaleSwitcher from './LocaleSwitcher'
+import { useAuth } from '@/hooks/useAuth'
+import { useRouter } from 'next/navigation'
+import { BookOpenIcon } from '@heroicons/react/24/outline'
 
 function ThemeToggle() {
   const { themeMode, setThemeMode } = useContext(ThemeContext)
@@ -29,6 +32,29 @@ function ThemeToggle() {
   )
 }
 
+function VocabularyNav() {
+  const { user } = useAuth()
+  const router = useRouter()
+
+  const handleVocabularyClick = () => {
+    if (user) {
+      router.push('/vocabulary')
+    } else {
+      router.push('/auth/signin')
+    }
+  }
+
+  return (
+    <button
+      onClick={handleVocabularyClick}
+      className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 transition-colors font-medium"
+    >
+      <BookOpenIcon className="w-5 h-5" />
+      <span>生词本</span>
+    </button>
+  )
+}
+
 export default function Header() {
   const { themeMode, setThemeMode } = useContext(ThemeContext) as { themeMode: 'light' | 'dark', setThemeMode: (mode: 'light' | 'dark') => void }
   
@@ -36,11 +62,12 @@ export default function Header() {
     <header className="bg-white dark:bg-gray-800 shadow-md">
       <div className="container mx-auto px-4">
         <nav className="flex items-center justify-between h-16">
-          {/* Left section: Logo */}
-          <div className="flex items-center">
+          {/* Left section: Logo + Vocabulary */}
+          <div className="flex items-center gap-6">
             <Link href="/" className="text-2xl font-serif text-gray-800 dark:text-white">
               Daily English
             </Link>
+            <VocabularyNav />
           </div>
 
           {/* Right section: ThemeToggle + LocaleSwitcher + AuthNav */}

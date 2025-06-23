@@ -39,13 +39,6 @@ declare module '@/components/AuthGuard' {
   export default AuthGuard
 }
 
-declare module '@/components/AuthNav' {
-  import { FC } from 'react'
-  
-  const AuthNav: FC
-  export default AuthNav
-}
-
 declare module '@/app/profile/page' {
   import { FC } from 'react'
   

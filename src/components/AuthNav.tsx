@@ -66,13 +66,6 @@ const AuthNav = () => {
               </Menu.Item>
               <Menu.Item>
                 {({ active }) => (
-                  <Link href="/vocabulary" className={classNames(active ? 'bg-gray-100 dark:bg-gray-700' : '', 'block px-4 py-2 text-sm text-gray-700 dark:text-gray-200')}>
-                    {t('my_vocabulary', 'My Vocabulary')}
-                  </Link>
-                )}
-              </Menu.Item>
-              <Menu.Item>
-                {({ active }) => (
                   <button
                     onClick={handleSignOut}
                     className={classNames(active ? 'bg-gray-100 dark:bg-gray-700' : '', 'w-full text-left block px-4 py-2 text-sm text-gray-700 dark:text-gray-200')}
