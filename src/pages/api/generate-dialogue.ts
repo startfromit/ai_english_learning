@@ -46,6 +46,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           gender: z.enum(['male', 'female']), // 添加性别信息
         })
       ),
+      vocabulary: z.array(
+        z.object({
+          word: z.string(),
+          meaning_en: z.string(),
+          meaning_zh: z.string(),
+          example: z.string(),
+        })
+      ),
     })
   );
   const formatInstructions = parser.getFormatInstructions();
@@ -129,6 +137,7 @@ Requirements:
 - Provide a Chinese translation for the dialogue title.
 - The conversation should start naturally and get straight to the topic. Avoid generic greetings like "Hello, how are you?".
 - The "title" should be a concise and appropriate English title for the given topic.
+- After the dialogue, select 3-5 difficult words or phrases from the conversation, provide English and Chinese explanations, and an example sentence for each.
 
 Output the following JSON structure:
 {
@@ -144,6 +153,10 @@ Output the following JSON structure:
       "timestamp": "...",
       "gender": "..."
     },
+    ...
+  ],
+  "vocabulary": [
+    {"word": "...", "meaning_en": "...", "meaning_zh": "...", "example": "..."},
     ...
   ]
 }

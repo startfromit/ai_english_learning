@@ -19,6 +19,13 @@ interface Sentence {
   chinese: string
 }
 
+interface VocabularyItem {
+  word: string;
+  meaning_en: string;
+  meaning_zh: string;
+  example: string;
+}
+
 interface DialogueMessage {
   speaker: string
   english: string
@@ -33,6 +40,7 @@ interface Dialogue {
   topic: string
   participants: string[]
   messages: DialogueMessage[]
+  vocabulary: VocabularyItem[];
 }
 
 interface Article {
@@ -40,11 +48,7 @@ interface Article {
   title_chinese: string;
   theme: string
   sentences: Sentence[]
-  vocabulary: {
-    word: string
-    meaning: string
-    example: string
-  }[]
+  vocabulary: VocabularyItem[];
 }
 
 // Supported voices
@@ -516,7 +520,7 @@ export default function ArticlePanel() {
       
       if (contentType === 'dialogue') {
         if (data.messages && Array.isArray(data.messages) && data.title) {
-          const newDialogue = { ...data, title_chinese: data.title_chinese || '' };
+          const newDialogue = { ...data, title_chinese: data.title_chinese || '', vocabulary: data.vocabulary || [] };
           setDialogue(newDialogue);
           if (typeof window !== 'undefined') {
             localStorage.setItem('lastDialogue', JSON.stringify(newDialogue));
@@ -527,7 +531,7 @@ export default function ArticlePanel() {
         }
       } else {
         if (data.sentences && Array.isArray(data.sentences) && data.title) {
-          const newArticle = { ...articleState, sentences: data.sentences, theme: '', title: data.title, title_chinese: data.title_chinese || '' };
+          const newArticle = { ...articleState, sentences: data.sentences, theme: '', title: data.title, title_chinese: data.title_chinese || '', vocabulary: data.vocabulary || [] };
           setArticle(newArticle);
           if (typeof window !== 'undefined') {
             localStorage.setItem('lastArticle', JSON.stringify(newArticle));
@@ -927,13 +931,14 @@ export default function ArticlePanel() {
         {/* 词汇表区 */}
         <div className="w-full lg:w-80 bg-white dark:bg-[#23272f] border border-gray-200 dark:border-gray-700 p-6 rounded-xl shadow-sm min-h-[320px] flex flex-col">
           <h2 className="text-xl font-serif text-serif mb-4 text-gray-900 dark:text-white">{t('vocabulary')}</h2>
-          {articleState.vocabulary && articleState.vocabulary.length > 0 ? (
+          {(contentType === 'article' && articleState.vocabulary && articleState.vocabulary.length > 0) || (contentType === 'dialogue' && dialogueState.vocabulary && dialogueState.vocabulary.length > 0) ? (
             <div className="space-y-4">
-              {articleState.vocabulary.map((item, index) => (
-                <div key={index} className="border-b pb-4">
+              {(contentType === 'article' ? articleState.vocabulary : dialogueState.vocabulary).map((item, index) => (
+                <div key={index} className="border-b pb-4 last:border-b-0">
                   <h3 className="font-bold text-gray-900 dark:text-white">{item.word}</h3>
-                  <p className="text-gray-600 dark:text-gray-100">{item.meaning}</p>
-                  <p className="text-sm italic mt-2 text-gray-400 dark:text-gray-400">{item.example}</p>
+                  <p className="text-gray-600 dark:text-gray-100">{item.meaning_en}</p>
+                  <p className="text-sm text-gray-400">{item.meaning_zh}</p>
+                  <p className="text-sm italic mt-2 text-gray-400">{item.example}</p>
                 </div>
               ))}
             </div>

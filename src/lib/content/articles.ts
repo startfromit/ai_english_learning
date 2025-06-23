@@ -8,7 +8,8 @@ export interface PredefinedArticle {
   }[];
   vocabulary: {
     word: string;
-    meaning: string;
+    meaning_en: string;
+    meaning_zh: string;
     example: string;
   }[];
 }
@@ -55,22 +56,26 @@ export const PREDEFINED_ARTICLES: PredefinedArticle[] = [
     vocabulary: [
       {
         word: "fundamentally",
-        meaning: "in a basic and important way",
+        meaning_en: "in a basic and important way",
+        meaning_zh: "根本上，基础且重要地",
         example: "The internet has fundamentally changed how we communicate."
       },
       {
         word: "fixture",
-        meaning: "something that is always present or available",
+        meaning_en: "something that is always present or available",
+        meaning_zh: "固定物，常驻事务",
         example: "Coffee has become a fixture in most offices."
       },
       {
         word: "cohesion",
-        meaning: "the state of sticking together or being united",
+        meaning_en: "the state of sticking together or being united",
+        meaning_zh: "凝聚力，团结",
         example: "Team cohesion is essential for project success."
       },
       {
         word: "hybrid",
-        meaning: "combining two different things",
+        meaning_en: "combining two different things",
+        meaning_zh: "混合的，结合两种不同事物的",
         example: "A hybrid car uses both electricity and gasoline."
       }
     ]
@@ -116,22 +121,26 @@ export const PREDEFINED_ARTICLES: PredefinedArticle[] = [
     vocabulary: [
       {
         word: "revolutionized",
-        meaning: "completely changed something in a positive way",
+        meaning_en: "completely changed something in a positive way",
+        meaning_zh: "彻底改变，使革命化",
         example: "Smartphones have revolutionized how we access information."
       },
       {
         word: "unprecedented",
-        meaning: "never having happened or existed before",
+        meaning_en: "never having happened or existed before",
+        meaning_zh: "前所未有的",
         example: "The pandemic created unprecedented challenges for businesses."
       },
       {
         word: "curated",
-        meaning: "carefully selected and organized",
+        meaning_en: "carefully selected and organized",
+        meaning_zh: "精心挑选和组织的",
         example: "The museum has a carefully curated collection of modern art."
       },
       {
         word: "marginalized",
-        meaning: "treated as unimportant or powerless",
+        meaning_en: "treated as unimportant or powerless",
+        meaning_zh: "边缘化的",
         example: "The program aims to help marginalized communities."
       }
     ]
@@ -177,22 +186,26 @@ export const PREDEFINED_ARTICLES: PredefinedArticle[] = [
     vocabulary: [
       {
         word: "degradation",
-        meaning: "the process of becoming worse or less valuable",
+        meaning_en: "the process of becoming worse or less valuable",
+        meaning_zh: "退化，恶化",
         example: "Soil degradation is a serious problem in many agricultural areas."
       },
       {
         word: "biodiversity",
-        meaning: "the variety of plant and animal life in a particular habitat",
+        meaning_en: "the variety of plant and animal life in a particular habitat",
+        meaning_zh: "生物多样性",
         example: "The Amazon rainforest has incredible biodiversity."
       },
       {
         word: "sustainable",
-        meaning: "able to continue over a period of time without harming the environment",
+        meaning_en: "able to continue over a period of time without harming the environment",
+        meaning_zh: "可持续的",
         example: "We need to find sustainable solutions to energy problems."
       },
       {
         word: "implications",
-        meaning: "the possible effects or results of an action or decision",
+        meaning_en: "the possible effects or results of an action or decision",
+        meaning_zh: "可能的影响，含义",
         example: "The new policy has serious implications for small businesses."
       }
     ]

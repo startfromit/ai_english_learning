@@ -10,6 +10,12 @@ export interface PredefinedDialogue {
     timestamp: string;
     gender: 'male' | 'female';
   }[];
+  vocabulary: {
+    word: string;
+    meaning_en: string;
+    meaning_zh: string;
+    example: string;
+  }[];
 }
 
 export const PREDEFINED_DIALOGUES: PredefinedDialogue[] = [
@@ -89,6 +95,20 @@ export const PREDEFINED_DIALOGUES: PredefinedDialogue[] = [
         timestamp: "10:14 AM",
         gender: "male"
       }
+    ],
+    vocabulary: [
+      {
+        word: "getaway",
+        meaning_en: "a short holiday",
+        meaning_zh: "短暂的假期",
+        example: "We're planning a weekend getaway to the mountains."
+      },
+      {
+        word: "adventurous",
+        meaning_en: "willing to take risks or to try out new methods, ideas, or experiences",
+        meaning_zh: "喜欢冒险的",
+        example: "For the more adventurous, there's bungee jumping."
+      }
     ]
   },
   {
@@ -166,6 +186,20 @@ export const PREDEFINED_DIALOGUES: PredefinedDialogue[] = [
         chinese: "这是非常可行的。我认为这真的可以为你打开新的机会。你绝对应该去做！",
         timestamp: "2:44 PM",
         gender: "male"
+      }
+    ],
+    vocabulary: [
+      {
+        word: "pursue",
+        meaning_en: "to follow or try to achieve something over a period of time",
+        meaning_zh: "追求，致力于",
+        example: "She plans to pursue a career in medicine."
+      },
+      {
+        word: "in demand",
+        meaning_en: "wanted by a lot of people",
+        meaning_zh: "有需求的，受欢迎的",
+        example: "Good programmers are always in demand."
       }
     ]
   },
@@ -245,6 +279,20 @@ export const PREDEFINED_DIALOGUES: PredefinedDialogue[] = [
         timestamp: "11:28 AM",
         gender: "male"
       }
+    ],
+    vocabulary: [
+      {
+        word: "cozy",
+        meaning_en: "giving a feeling of comfort, warmth, and relaxation",
+        meaning_zh: "舒适的，温馨的",
+        example: "The living room was warm and cozy."
+      },
+      {
+        word: "outlet",
+        meaning_en: "a way of expressing or making good use of strong feelings, ideas, or energy",
+        meaning_zh: "（情感、精力的）发泄途径",
+        example: "Writing became the main outlet for his frustration."
+      }
     ]
   }
 ];
@@ -252,4 +300,4 @@ export const PREDEFINED_DIALOGUES: PredefinedDialogue[] = [
 export function getRandomDialogue(): PredefinedDialogue {
   const randomIndex = Math.floor(Math.random() * PREDEFINED_DIALOGUES.length);
   return PREDEFINED_DIALOGUES[randomIndex];
-} 
+}
