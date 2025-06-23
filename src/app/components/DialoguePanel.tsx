@@ -119,7 +119,12 @@ const DialoguePanel: React.FC<DialoguePanelProps> = ({
       <audio ref={audioRef} />
       
       {/* 对话内容区域 */}
-      <div className="bg-gray-100 dark:bg-gray-900 p-4 overflow-y-auto" style={{ height: 'calc(100vh - 420px)' }}>
+      <div 
+        className="bg-gray-100 dark:bg-gray-900 p-6 overflow-y-auto scrollbar-thin" 
+        style={{ 
+          height: 'calc(100vh - 420px)'
+        }}
+      >
         <div className="space-y-4">
           {dialogue.messages.map((message, index) => (
             <AnimatePresence key={index}>
@@ -213,7 +218,7 @@ const DialoguePanel: React.FC<DialoguePanelProps> = ({
       </div>
       
       {/* 对话底部 */}
-      <div className="bg-gray-50 dark:bg-gray-800 p-3 border-t border-gray-200 dark:border-gray-700">
+      <div className="bg-gray-50 dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between text-sm text-gray-500">
           <span>参与者: {dialogue.participants.join(' & ')}</span>
           <span>{dialogue.messages.length} 条消息</span>
