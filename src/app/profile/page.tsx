@@ -19,7 +19,7 @@ function ProfileContent() {
       const response = await fetch('/api/get-remaining-plays')
       if (response.ok) {
         const data = await response.json()
-        setRemainingPlays(data.remainingPlays)
+        setRemainingPlays(data.remaining || 0)
       } else {
         console.error('Failed to fetch remaining plays')
       }
@@ -89,13 +89,13 @@ function ProfileContent() {
             <p className="text-sm text-gray-700 dark:text-gray-300">
               <span className="font-medium">Remaining audio plays today:</span>{' '}
               <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                {remainingPlays} / 10
+                {remainingPlays} / 20
               </span>
             </p>
             <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2 dark:bg-gray-700">
               <div 
                 className="bg-indigo-600 h-2.5 rounded-full" 
-                style={{ width: `${(remainingPlays / 10) * 100}%` }}
+                style={{ width: `${(remainingPlays / 20) * 100}%` }}
               ></div>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">

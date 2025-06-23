@@ -92,7 +92,7 @@ export async function canPlayAudio(): Promise<{ canPlay: boolean; remaining: num
       .eq('usage_date', today)
       .single() as { data: UserUsage | null; error: any }
 
-    const MAX_DAILY_PLAYS = 10
+    const MAX_DAILY_PLAYS = 20
     
     // If no record exists or it's a new day, reset the counter
     if (!usage || usage.usage_date !== today) {
@@ -161,9 +161,9 @@ export async function getRemainingPlays(): Promise<number> {
     .eq('usage_date', today)
     .single() as { data: Pick<UserUsage, 'play_count'> | null; error: any }
 
-  if (error || !usage) return 10 // Default to max if no record exists
+  if (error || !usage) return 20 // Default to max if no record exists
   
-  return Math.max(0, 10 - (usage.play_count || 0))
+  return Math.max(0, 20 - (usage.play_count || 0))
 }
 
 export const authOptions: NextAuthOptions = {

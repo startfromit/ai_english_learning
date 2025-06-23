@@ -45,5 +45,5 @@
   "favorite": "Favorite",
   "unfavorite": "Unfavorite",
   "favorited": "Favorited",
-  "Failed to generate audio. Please try again.": "Insufficient play credits. Recharge feature is not available yet. Please try again tomorrow."
+  "Failed to generate audio. Please try again.": "Insufficient play credits. Recharge feature is not available yet. Please try again tomorrow. (Daily limit: 20 plays)"
 } 
