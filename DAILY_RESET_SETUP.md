@@ -14,12 +14,12 @@ create or replace function public.check_and_reset_daily_play_count(user_id uuid)
 returns integer as $$
 declare
   current_play_count integer;
-  last_play_date date;
+  v_last_play_date date;
   today_date date := current_date;
 begin
   -- Get current usage data
   select daily_play_count, last_play_date 
-  into current_play_count, last_play_date
+  into current_play_count, v_last_play_date
   from public.user_usage 
   where id = user_id;
   
@@ -31,7 +31,7 @@ begin
   end if;
   
   -- If it's a new day, reset the play count
-  if last_play_date < today_date then
+  if v_last_play_date < today_date then
     update public.user_usage 
     set daily_play_count = 0, last_play_date = today_date
     where id = user_id;
