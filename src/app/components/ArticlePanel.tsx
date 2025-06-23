@@ -3,7 +3,8 @@
 import React, { useState, useRef, useEffect, useContext } from 'react'
 import { getTTSUrl, TTSEngine } from '../lib/tts'
 import { motion, AnimatePresence } from 'framer-motion'
-import { SpeakerWaveIcon, EyeIcon, ChevronUpIcon, PlusCircleIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
+import { SpeakerWaveIcon, EyeIcon, ChevronUpIcon, PlusCircleIcon, CheckCircleIcon, StarIcon } from '@heroicons/react/24/outline'
+import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid'
 import { ThemeContext } from './ThemeProvider'
 import TypeIt from "typeit-react";
 import { useAuth } from '@/hooks/useAuth';
@@ -137,6 +138,7 @@ export default function ArticlePanel() {
         throw new Error(error || 'Failed to add vocabulary');
       }
       setVocabStatus(prev => ({ ...prev, [item.word]: 'added' }));
+      // Optionally show a success toast or animation
     } catch (error) {
       console.error(error);
       setVocabStatus(prev => ({ ...prev, [item.word]: 'idle' }));
@@ -1007,43 +1009,47 @@ export default function ArticlePanel() {
           {(contentType === 'article' && articleState.vocabulary && articleState.vocabulary.length > 0) || (contentType === 'dialogue' && dialogueState.vocabulary && dialogueState.vocabulary.length > 0) ? (
             <div className="space-y-4">
               {(contentType === 'article' ? articleState.vocabulary : dialogueState.vocabulary).map((item, index) => (
-                <div
-                  key={index}
-                  className={`border-b pb-4 last:border-b-0 p-2 rounded-md transition-colors duration-200 ${
+                <div 
+                  key={index} 
+                  className={`mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg transition-colors duration-200 ${
                     highlightedVocab === item.word ? 'bg-yellow-200/50 dark:bg-yellow-700/30' : ''
                   }`}
                   onMouseEnter={() => setHighlightedVocab(item.word)}
                   onMouseLeave={() => setHighlightedVocab(null)}
                 >
-                  <h3 className="font-bold text-gray-900 dark:text-white">{item.word}</h3>
-                  <p className="text-gray-600 dark:text-gray-100">{item.meaning_en}</p>
-                  <p className="text-sm text-gray-400">{item.meaning_zh}</p>
-                  <p className="text-sm italic mt-2 text-gray-400">{item.example}</p>
-                  <div className="mt-2">
-                    <button
-                      onClick={() => handleAddVocabulary(item)}
-                      disabled={vocabStatus[item.word] === 'loading' || vocabStatus[item.word] === 'added'}
-                      className="flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {vocabStatus[item.word] === 'added' ? (
-                        <>
-                          <CheckCircleIcon className="w-4 h-4" />
-                          <span>{t('added', 'Added')}</span>
-                        </>
-                      ) : vocabStatus[item.word] === 'loading' ? (
-                        <>
-                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                          </svg>
-                          <span>{t('adding', 'Adding...')}</span>
-                        </>
-                      ) : (
-                        <>
-                          <PlusCircleIcon className="w-4 h-4" />
-                          <span>{t('add_to_vocab', 'Add to Vocab')}</span>
-                        </>
-                      )}
-                    </button>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-semibold text-gray-800 dark:text-gray-200">{item.word}</p>
+                        <div className="group relative">
+                          <button
+                            onClick={() => handleAddVocabulary(item)}
+                            disabled={vocabStatus[item.word] === 'loading'}
+                            title={vocabStatus[item.word] === 'added' ? t('favorited', 'Favorited') : t('favorite', 'Favorite')}
+                            className={`transition-all duration-200 ${
+                              vocabStatus[item.word] === 'added' 
+                                ? 'text-yellow-500 hover:text-yellow-600' 
+                                : `text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 ${
+                                    highlightedVocab === item.word ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                  }`
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          >
+                            {vocabStatus[item.word] === 'added' ? (
+                              <StarIconSolid className="w-4 h-4" />
+                            ) : vocabStatus[item.word] === 'loading' ? (
+                              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                              </svg>
+                            ) : (
+                              <StarIcon className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-100">{item.meaning_en}</p>
+                      <p className="text-sm text-gray-400">{item.meaning_zh}</p>
+                      <p className="text-sm italic mt-2 text-gray-400">{item.example}</p>
+                    </div>
                   </div>
                 </div>
               ))}

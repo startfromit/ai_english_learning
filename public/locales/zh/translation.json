@@ -41,5 +41,8 @@
   "load_more": "加载更多",
   "loading_more": "正在加载更多...",
   "search_results": "显示",
-  "of": "共"
+  "of": "共",
+  "favorite": "收藏",
+  "unfavorite": "取消收藏",
+  "favorited": "已收藏"
 } 

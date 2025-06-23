@@ -41,5 +41,8 @@
   "load_more": "Load More",
   "loading_more": "Loading more...",
   "search_results": "Showing",
-  "of": "of"
+  "of": "of",
+  "favorite": "Favorite",
+  "unfavorite": "Unfavorite",
+  "favorited": "Favorited"
 } 
