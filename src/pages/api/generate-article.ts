@@ -1,12 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { ChatOpenAI } from "@langchain/openai";
-import { Ollama } from "@langchain/ollama";
 import { StructuredOutputParser } from "langchain/output_parsers";
 import { z } from "zod";
 import { RANDOM_TOPICS, RANDOM_THEMES, RANDOM_PERSPECTIVES, RANDOM_AUDIENCES, getRandomElement } from '../../lib/topics';
+import { getLlm, LlmProvider } from '@/lib/llm';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const provider = process.env.LLM_PROVIDER || 'openai';
+  const provider = (process.env.LLM_PROVIDER || 'openai') as LlmProvider;
   const { topic = '', theme = '科技', length = 200 } = req.body;
   // 防攻击：强制限制长度
   const safeLength = Math.max(100, Math.min(500, Number(length) || 200));
@@ -35,29 +34,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const formatInstructions = parser.getFormatInstructions();
 
   let llm: any;
-  if (provider === 'openai') {
-    llm = new ChatOpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      model: "gpt-3.5-turbo",
-      temperature: 1,
-    });
-  } else if (provider === 'ollama') {
-    llm = new Ollama({
-      model: process.env.OLLAMA_MODEL || "qwen2.5:7b",
-      baseUrl: process.env.OLLAMA_API_BASE || 'http://localhost:11434',
-      temperature: 1,
-      maxRetries: 2,
-    });
-  } else if (provider === 'deepseek') {
-    llm = new ChatOpenAI({
-      apiKey: process.env.DEEPSEEK_API_KEY,
-      model: "deepseek-chat",
-      temperature: 1,
-      // @ts-expect-error
-      baseURL: "https://api.deepseek.com/v1",
-    });
-  } else {
-    return res.status(400).json({ error: '不支持的 LLM_PROVIDER' });
+  try {
+    llm = getLlm(provider);
+  } catch (error: any) {
+    return res.status(400).json({ error: error.message });
   }
 
   let finalTopic = topic;
@@ -105,19 +85,45 @@ Generate something unique and unexpected:`;
   ];
 
   try {
-    console.log('即将请求 LLM，provider:', provider, 'model:', llm.model, 'baseURL:', llm.baseUrl || llm.baseURL);
+    console.log('即将请求 LLM，provider:', provider, 'model:', llm.modelName || llm.model, 'baseURL:', llm.lc_kwargs?.baseURL || llm.baseUrl);
+    
     const result = await Promise.race([
       llm.invoke(prompt),
       new Promise((_, reject) => setTimeout(() => reject(new Error('LLM请求超时')), 60_000))
     ]);
-    console.log('LLM返回结果:', result);
+    
+    console.log('LLM初次返回结果:', result.content);
+
     let parsed;
     try {
+      // 首次尝试解析
       // @ts-ignore
-      parsed = await parser.parse(result);
+      parsed = await parser.parse(result.content);
     } catch (err) {
-      // @ts-ignore
-      return res.status(500).json({ error: "结构化解析失败", raw: result, details: err?.message });
+      console.error("第一次解析失败，尝试发送修正请求...", err);
+      
+      const correctionPrompt = [
+        ...prompt, // 原始prompt
+        result,   // 模型第一次的错误回复
+        {
+            role: "user",
+            content: `The JSON object you provided was invalid. Please fix it. The parsing error was: \n\n${(err as Error).message}\n\nPlease provide only the corrected JSON object, without any surrounding text, explanations, or code fences.`
+        }
+      ];
+
+      // 发送修正请求
+      const correctedResult = await llm.invoke(correctionPrompt);
+      console.log("LLM修正后的返回结果:", correctedResult.content);
+
+      try {
+        // 再次尝试解析
+        // @ts-ignore
+        parsed = await parser.parse(correctedResult.content);
+      } catch (finalErr) {
+         console.error("修正后解析仍然失败", finalErr);
+         // @ts-ignore
+         return res.status(500).json({ error: "结构化解析失败", raw: correctedResult.content, details: (finalErr as Error)?.message });
+      }
     }
     res.status(200).json(parsed);
   } catch (e: any) {
