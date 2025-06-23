@@ -93,6 +93,7 @@ export default function ArticlePanel() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginModalMessage, setLoginModalMessage] = useState(t('loginRequired'));
   const [isSettingsCollapsed, setIsSettingsCollapsed] = useState(false);
+  const [highlightedVocab, setHighlightedVocab] = useState<string | null>(null);
   
   // Initialize customLength from localStorage after mount
   useEffect(() => {
@@ -410,77 +411,100 @@ export default function ArticlePanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentVoice, engine, currentSpeed, articleState, dialogueState, contentType]);
 
-  const renderParagraph = () => (
-    <div className="font-serif text-lg leading-relaxed text-gray-800 dark:text-gray-300 text-left hyphens-auto">
-      {articleState.sentences.map((s: Sentence, idx: number) => (
-        <span
-          key={idx}
-          className={`relative group inline align-baseline transition-all duration-150 p-1 rounded-md ${
-            (isPlayingAll && playingIndex === idx) 
-            ? 'bg-yellow-200/70 dark:bg-yellow-200/20' 
-            : hoverIndex === idx
-            ? 'border-b border-dashed border-gray-300 dark:border-gray-500 pb-0.5'
-            : 'hover:border-b hover:border-dashed hover:border-gray-300 dark:hover:border-gray-500 hover:pb-0.5'
-          }`}
-          style={{
-            fontWeight: 400,
-            cursor: loadingIndex !== null ? 'not-allowed' : isPlayingAll ? 'not-allowed' : 'pointer',
-            pointerEvents: (loadingIndex !== null && loadingIndex !== idx) || isPlayingAll ? 'none' : 'auto',
-          }}
-          onMouseEnter={() => handleMouseEnter(idx)}
-          onMouseLeave={handleMouseLeave}
-          onMouseMove={(e) => handleMouseMove(e, idx)}
-          onClick={e => {
-            e.stopPropagation();
-            if (loadingIndex === null && !isPlayingAll) handleSpeak(s.english, idx);
-          }}
-        >
-          <span className="relative">
-            {s.english}
-          </span>
-          {/* loading 动画 */}
-          {loadingIndex === idx && (
-            <span className="absolute -top-5 right-0 z-50">
-              <svg className="animate-spin h-4 w-4 text-indigo-400" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-              </svg>
+  const renderParagraph = () => {
+    const vocabulary = articleState.vocabulary || [];
+    const sentences = articleState.sentences || [];
+
+    if (sentences.length === 0) return null;
+
+    const vocabRegex = vocabulary.length > 0
+      ? new RegExp(`\\b(${vocabulary.map(v => v.word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|')})\\b`, 'gi')
+      : null;
+
+    return (
+      <div className="font-serif text-lg leading-relaxed text-gray-800 dark:text-gray-300 text-left hyphens-auto">
+        {sentences.map((s, idx) => (
+          <span
+            key={idx}
+            className={`relative group inline align-baseline transition-all duration-150 p-1 rounded-md ${
+              (isPlayingAll && playingIndex === idx)
+              ? 'bg-yellow-200/70 dark:bg-yellow-200/20'
+              : 'hover:border-b hover:border-dashed hover:border-gray-300 dark:hover:border-gray-500 hover:pb-0.5'
+            }`}
+            style={{
+              fontWeight: 400,
+              cursor: loadingIndex !== null ? 'not-allowed' : isPlayingAll ? 'not-allowed' : 'pointer',
+              pointerEvents: (loadingIndex !== null && loadingIndex !== idx) || isPlayingAll ? 'none' : 'auto',
+            }}
+            onMouseEnter={() => handleMouseEnter(idx)}
+            onMouseLeave={handleMouseLeave}
+            onMouseMove={(e) => handleMouseMove(e, idx)}
+            onClick={e => {
+              if ((e.target as HTMLElement).closest('[data-vocab-word="true"]')) {
+                e.stopPropagation();
+                return;
+              }
+              e.stopPropagation();
+              if (loadingIndex === null && !isPlayingAll) handleSpeak(s.english, idx);
+            }}
+          >
+            <span className="relative">
+              {!vocabRegex ? s.english : s.english.split(vocabRegex).map((part, i) => {
+                if (i % 2 === 0) return part;
+                const vocabItem = vocabulary.find(v => v.word.toLowerCase() === part.toLowerCase());
+                if (!vocabItem) return part;
+
+                return (
+                  <span
+                    key={i}
+                    data-vocab-word="true"
+                    className={`font-bold cursor-pointer rounded-md p-0.5 transition-colors duration-200 ${
+                      highlightedVocab === vocabItem.word ? 'bg-yellow-200 dark:bg-yellow-700' : ''
+                    }`}
+                    onMouseEnter={(e) => { e.stopPropagation(); setHighlightedVocab(vocabItem.word); }}
+                    onMouseLeave={(e) => { e.stopPropagation(); setHighlightedVocab(null); }}
+                  >
+                    {part}
+                  </span>
+                );
+              })}
             </span>
-          )}
-          {/* {isPlayingAll && playingIndex === idx && (
-            <span className="absolute -top-5 left-0 z-50">
-              <svg className="animate-pulse h-4 w-4 text-indigo-500" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path fill="currentColor" d="M10 8l6 4-6 4V8z" />
-              </svg>
-            </span>
-          )} */}
-          {idx < articleState.sentences.length - 1 && ' '}
-          <AnimatePresence>
-            {showBubbleIndex === idx && bubblePos && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                transition={{ duration: 0.22 }}
-                className="fixed z-50 px-3 py-1 bg-gray-800 text-white text-sm rounded shadow-lg pointer-events-none select-none whitespace-pre-line max-w-xs text-left"
-                style={{
-                  left: bubblePos.absLeft + bubblePos.x + 8,
-                  top: bubblePos.absTop + bubblePos.y + 24,
-                  minWidth: 'max-content',
-                  maxWidth: 320,
-                  width: 'max-content',
-                  transform: 'translate(-50%, 0)'
-                }}
-              >
-                {s.chinese}
-              </motion.div>
+            {/* loading 动画 */}
+            {loadingIndex === idx && (
+              <span className="absolute -top-5 right-0 z-50">
+                <svg className="animate-spin h-4 w-4 text-indigo-400" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+              </span>
             )}
-          </AnimatePresence>
-        </span>
-      ))}
-    </div>
-  );
+            {idx < sentences.length - 1 && ' '}
+            <AnimatePresence>
+              {showBubbleIndex === idx && bubblePos && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.22 }}
+                  className="fixed z-50 px-3 py-1 bg-gray-800 text-white text-sm rounded shadow-lg pointer-events-none select-none whitespace-pre-line max-w-xs text-left"
+                  style={{
+                    left: bubblePos.absLeft + bubblePos.x + 8,
+                    top: bubblePos.absTop + bubblePos.y + 24,
+                    minWidth: 'max-content',
+                    maxWidth: 320,
+                    width: 'max-content',
+                    transform: 'translate(-50%, 0)'
+                  }}
+                >
+                  {s.chinese}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </span>
+        ))}
+      </div>
+    );
+  };
 
   // Support custom topics and random generation
   const handleGenerate = async (mode: 'custom' | 'random') => {
@@ -934,7 +958,14 @@ export default function ArticlePanel() {
           {(contentType === 'article' && articleState.vocabulary && articleState.vocabulary.length > 0) || (contentType === 'dialogue' && dialogueState.vocabulary && dialogueState.vocabulary.length > 0) ? (
             <div className="space-y-4">
               {(contentType === 'article' ? articleState.vocabulary : dialogueState.vocabulary).map((item, index) => (
-                <div key={index} className="border-b pb-4 last:border-b-0">
+                <div
+                  key={index}
+                  className={`border-b pb-4 last:border-b-0 p-2 rounded-md transition-colors duration-200 ${
+                    highlightedVocab === item.word ? 'bg-yellow-200/50 dark:bg-yellow-700/30' : ''
+                  }`}
+                  onMouseEnter={() => setHighlightedVocab(item.word)}
+                  onMouseLeave={() => setHighlightedVocab(null)}
+                >
                   <h3 className="font-bold text-gray-900 dark:text-white">{item.word}</h3>
                   <p className="text-gray-600 dark:text-gray-100">{item.meaning_en}</p>
                   <p className="text-sm text-gray-400">{item.meaning_zh}</p>
