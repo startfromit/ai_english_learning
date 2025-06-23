@@ -24,5 +24,15 @@
   "dialogueGenerationFailed": "Dialogue generation failed",
   "share": "Share",
   "topicPlaceholder_prefix": "Enter a topic, like",
-  "topicPlaceholder_suggest": "The Future of Remote Work"
+  "topicPlaceholder_suggest": "The Future of Remote Work",
+  "export_csv": "Export CSV",
+  "my_vocabulary": "My Vocabulary",
+  "no_vocab_yet": "Your vocabulary book is empty.",
+  "no_vocab_tip": "Start adding words from the articles and dialogues you read.",
+  "auth_required_title": "Authentication Required",
+  "auth_required_vocab": "Please sign in to view your vocabulary book.",
+  "delete": "Delete",
+  "added": "Added",
+  "adding": "Adding...",
+  "add_to_vocab": "Add to Vocab"
 } 

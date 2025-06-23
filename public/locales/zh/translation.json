@@ -15,7 +15,7 @@
   "generateDialogue": "生成对话",
   "generating": "生成中...",
   "randomTopic": "随机话题",
-  "vocabulary": "词汇表",
+  "vocabulary": "生词本",
   "noVocabulary": "暂无重点词汇",
   "loginRequired": "请先登录再使用此功能",
   "userLoading": "正在加载用户信息，请稍后再试",
@@ -24,5 +24,15 @@
   "dialogueGenerationFailed": "对话生成失败",
   "share": "分享",
   "topicPlaceholder_prefix": "可以输入具体话题，如",
-  "topicPlaceholder_suggest": "远程工作的未来"
+  "topicPlaceholder_suggest": "远程工作的未来",
+  "export_csv": "导出CSV",
+  "my_vocabulary": "我的生词本",
+  "no_vocab_yet": "你的生词本还是空的。",
+  "no_vocab_tip": "从你阅读的文章和对话中开始添加单词。",
+  "auth_required_title": "需要认证",
+  "auth_required_vocab": "请先登录以查看你的生词本。",
+  "delete": "删除",
+  "added": "已添加",
+  "adding": "添加中...",
+  "add_to_vocab": "添加到生词本"
 } 

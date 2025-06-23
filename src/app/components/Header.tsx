@@ -7,6 +7,7 @@ import LocaleSwitcher from './LocaleSwitcher'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { BookOpenIcon } from '@heroicons/react/24/outline'
+import { useTranslation } from 'react-i18next'
 
 function ThemeToggle() {
   const { themeMode, setThemeMode } = useContext(ThemeContext)
@@ -35,6 +36,7 @@ function ThemeToggle() {
 function VocabularyNav() {
   const { user } = useAuth()
   const router = useRouter()
+  const { t } = useTranslation()
 
   const handleVocabularyClick = () => {
     if (user) {
@@ -50,7 +52,7 @@ function VocabularyNav() {
       className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 transition-colors font-medium"
     >
       <BookOpenIcon className="w-5 h-5" />
-      <span>生词本</span>
+      <span>{t('vocabulary', '生词本')}</span>
     </button>
   )
 }
