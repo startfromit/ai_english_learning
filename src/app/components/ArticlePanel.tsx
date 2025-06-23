@@ -105,9 +105,10 @@ export default function ArticlePanel() {
 
   const fetchUserVocabulary = async () => {
     try {
-      const response = await fetch('/api/vocabulary/get');
+      const response = await fetch('/api/vocabulary/get?limit=1000'); // Get all vocabulary for checking status
       if (!response.ok) throw new Error('Failed to fetch vocabulary');
-      const data = await response.json();
+      const result = await response.json();
+      const data = result.data || result; // Handle both new and old response formats
       setUserVocabulary(data);
       const newStatus: Record<string, 'idle' | 'loading' | 'added'> = {};
       data.forEach((v: VocabularyItem) => {

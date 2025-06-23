@@ -34,5 +34,12 @@
   "delete": "Delete",
   "added": "Added",
   "adding": "Adding...",
-  "add_to_vocab": "Add to Vocab"
+  "add_to_vocab": "Add to Vocab",
+  "total_words": "Total",
+  "words": "words",
+  "search_vocabulary": "Search vocabulary...",
+  "load_more": "Load More",
+  "loading_more": "Loading more...",
+  "search_results": "Showing",
+  "of": "of"
 } 
