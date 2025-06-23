@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useContext } from 'react'
 import { getTTSUrl, TTSEngine } from '../lib/tts'
 import { motion, AnimatePresence } from 'framer-motion'
-import { SpeakerWaveIcon, EyeIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
+import { SpeakerWaveIcon, EyeIcon, ChevronUpIcon, PlusCircleIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 import { ThemeContext } from './ThemeProvider'
 import TypeIt from "typeit-react";
 import { useAuth } from '@/hooks/useAuth';
@@ -94,6 +94,54 @@ export default function ArticlePanel() {
   const [loginModalMessage, setLoginModalMessage] = useState(t('loginRequired'));
   const [isSettingsCollapsed, setIsSettingsCollapsed] = useState(false);
   const [highlightedVocab, setHighlightedVocab] = useState<string | null>(null);
+  const [userVocabulary, setUserVocabulary] = useState<VocabularyItem[]>([]);
+  const [vocabStatus, setVocabStatus] = useState<Record<string, 'idle' | 'loading' | 'added'>>({});
+  
+  useEffect(() => {
+    if (user) {
+      fetchUserVocabulary();
+    }
+  }, [user]);
+
+  const fetchUserVocabulary = async () => {
+    try {
+      const response = await fetch('/api/vocabulary/get');
+      if (!response.ok) throw new Error('Failed to fetch vocabulary');
+      const data = await response.json();
+      setUserVocabulary(data);
+      const newStatus: Record<string, 'idle' | 'loading' | 'added'> = {};
+      data.forEach((v: VocabularyItem) => {
+        newStatus[v.word] = 'added';
+      });
+      setVocabStatus(newStatus);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleAddVocabulary = async (item: VocabularyItem) => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+    setVocabStatus(prev => ({ ...prev, [item.word]: 'loading' }));
+    try {
+      const response = await fetch('/api/vocabulary/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item),
+      });
+      if (!response.ok) {
+        const { error } = await response.json();
+        throw new Error(error || 'Failed to add vocabulary');
+      }
+      setVocabStatus(prev => ({ ...prev, [item.word]: 'added' }));
+    } catch (error) {
+      console.error(error);
+      setVocabStatus(prev => ({ ...prev, [item.word]: 'idle' }));
+      // Optionally show a toast notification for the error
+    }
+  };
   
   // Initialize customLength from localStorage after mount
   useEffect(() => {
@@ -970,6 +1018,32 @@ export default function ArticlePanel() {
                   <p className="text-gray-600 dark:text-gray-100">{item.meaning_en}</p>
                   <p className="text-sm text-gray-400">{item.meaning_zh}</p>
                   <p className="text-sm italic mt-2 text-gray-400">{item.example}</p>
+                  <div className="mt-2">
+                    <button
+                      onClick={() => handleAddVocabulary(item)}
+                      disabled={vocabStatus[item.word] === 'loading' || vocabStatus[item.word] === 'added'}
+                      className="flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {vocabStatus[item.word] === 'added' ? (
+                        <>
+                          <CheckCircleIcon className="w-4 h-4" />
+                          <span>{t('added', 'Added')}</span>
+                        </>
+                      ) : vocabStatus[item.word] === 'loading' ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          </svg>
+                          <span>{t('adding', 'Adding...')}</span>
+                        </>
+                      ) : (
+                        <>
+                          <PlusCircleIcon className="w-4 h-4" />
+                          <span>{t('add_to_vocab', 'Add to Vocab')}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

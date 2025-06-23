@@ -55,6 +55,35 @@ export interface Database {
           updated_at?: string
         }
       }
+      user_vocabulary: {
+        Row: {
+          id: number
+          user_id: string
+          created_at: string
+          word: string
+          meaning_en: string | null
+          meaning_zh: string | null
+          example: string | null
+        }
+        Insert: {
+          id?: number
+          user_id: string
+          created_at?: string
+          word: string
+          meaning_en?: string | null
+          meaning_zh?: string | null
+          example?: string | null
+        }
+        Update: {
+          id?: number
+          user_id?: string
+          created_at?: string
+          word?: string
+          meaning_en?: string | null
+          meaning_zh?: string | null
+          example?: string | null
+        }
+      }
     }
     Views: {
       [_ in never]: never
