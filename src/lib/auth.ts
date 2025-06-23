@@ -267,45 +267,68 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, account }) {
-      console.log("JWT callback called with:", { token: token.sub, user: user?.id, account: account?.provider });
-      
-      if (account?.provider === 'github' && user) {
+    async jwt({ token, user }) {
+      // 如果这是登录后的第一次调用，user 对象是可用的
+      if (user) {
         token.id = user.id;
-        const supabase = createClient();
-        const { data: publicUser } = await supabase
+        token.email = user.email;
+        token.name = user.name;
+        
+        // 立即设置一个临时角色，稍后会在数据库查询后更新
+        token.role = 'user';
+      }
+      
+      // 如果 token 中有 id，尝试获取用户角色
+      const userId = token.id || token.sub;
+      if (userId) {
+        try {
+          // 使用服务端 Supabase 客户端
+          const { createClient } = await import('./supabase/server');
+          const supabase = createClient();
+          
+          // 从数据库获取用户角色
+          const { data: publicUser, error } = await supabase
             .from('users')
-            .select('*')
-            .eq('id', user.id)
+            .select('role')
+            .eq('id', userId)
             .single();
-
-        if (!publicUser) {
-           await supabase.from('users').insert({
-              id: user.id,
-              email: user.email,
-              name: user.name,
-              provider: 'github',
-              email_verified: true,
-            });
+            
+          console.log('Fetching user role:', { userId, publicUser, error });
+          
+          if (error) {
+            console.error('Error fetching user role:', error);
+          }
+          
+          // 更新 token 中的角色
+          token.role = publicUser?.role || 'user';
+        } catch (error) {
+          console.error('Error in JWT callback:', error);
+          token.role = 'user';
         }
       }
       
-      // Handle supabase provider
-      if (account?.provider === 'supabase' && user) {
-        console.log("Setting token.id for supabase provider:", user.id);
-        token.id = user.id;
-      }
-      
-      console.log("JWT callback returning token:", { sub: token.sub, id: token.id });
       return token;
     },
     async session({ session, token }) {
-      console.log("Session callback called with:", { sessionUser: session.user?.id, tokenSub: token.sub, tokenId: token.id });
+      console.log('Session callback', { token, session });
       
       if (session.user) {
-        session.user.id = token.sub || token.id || '';
-        console.log("Session callback setting user.id to:", session.user.id);
+        // 确保 session.user 有正确的类型
+        const userWithRole = session.user as {
+          id: string;
+          email?: string | null;
+          name?: string | null;
+          image?: string | null;
+          role?: string;
+        };
+        
+        // 设置用户 ID 和角色
+        userWithRole.id = token.sub || token.id || '';
+        userWithRole.role = token.role || 'user';
+        
+        console.log('Setting session user:', userWithRole);
       }
+      
       return session;
     },
   },

@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from 'next-auth/react';
 import DebugInfo from "./_components/DebugInfo";
 import EmailTestAndDiagnostics from "./_components/EmailTestAndDiagnostics";
 import ForceCleanup from "./_components/ForceCleanup";
 import AdminSettings from "./_components/AdminSettings";
-import AuthGuard from "../../../components/AuthGuard";
+import { Loader2 } from "lucide-react";
 
 const TABS = [
   { id: "info", label: "Debug Info", component: <DebugInfo /> },
@@ -15,8 +17,31 @@ const TABS = [
 ];
 
 function DebugPageContent() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState(TABS[0].id);
   const activeComponent = TABS.find((tab) => tab.id === activeTab)?.component;
+
+  useEffect(() => {
+    // 如果会话加载完成且用户不是管理员，重定向到首页
+    if (status === 'authenticated' && session?.user?.role !== 'admin') {
+      router.push('/');
+    }
+  }, [session, status, router]);
+
+  // 如果会话正在加载，显示加载指示器
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  // 如果用户未登录或不是管理员，返回 null（会被重定向）
+  if (status !== 'authenticated' || session?.user?.role !== 'admin') {
+    return null;
+  }
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
@@ -46,9 +71,28 @@ function DebugPageContent() {
 }
 
 export default function DebugPage() {
-  return (
-    <AuthGuard>
-      <DebugPageContent />
-    </AuthGuard>
-  );
+  const { data: session, status } = useSession();
+  const [notAdmin, setNotAdmin] = useState(false);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      // session.user.role 可能类型未声明，需用 any
+      if ((session?.user as any)?.role !== 'admin') {
+        setNotAdmin(true);
+      } else {
+        setNotAdmin(false);
+      }
+    }
+  }, [session, status]);
+
+  if (status === 'loading') {
+    return <div className="flex justify-center items-center h-screen"><p>Loading...</p></div>;
+  }
+  if (status === 'unauthenticated') {
+    return <div className="flex justify-center items-center h-screen"><p>Please sign in to access this page.</p></div>;
+  }
+  if (notAdmin) {
+    return <div className="flex justify-center items-center h-screen"><p className="text-red-600 text-lg font-bold">You are not authorized to view this page.</p></div>;
+  }
+  return <DebugPageContent />;
 } 
