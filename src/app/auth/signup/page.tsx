@@ -12,6 +12,7 @@ export default function SignUpPage() {
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [otpSent, setOtpSent] = useState(false)
   const router = useRouter()
@@ -20,6 +21,7 @@ export default function SignUpPage() {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setSuccess(null)
 
     const res = await fetch('/api/auth/send-otp', {
       method: 'POST',
@@ -29,7 +31,7 @@ export default function SignUpPage() {
 
     if (res.ok) {
       setOtpSent(true)
-      setError('Verification code sent. Please check your email.')
+      setSuccess('Verification code sent. Please check your email.')
     } else {
       const { error } = await res.json()
       setError(error || 'Failed to send verification code.')
@@ -41,6 +43,7 @@ export default function SignUpPage() {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setSuccess(null)
 
     try {
       // 1. 验证 OTP 并创建账号
@@ -202,6 +205,7 @@ export default function SignUpPage() {
         )}
 
         {error && <p className="mt-2 text-center text-sm text-red-600">{error}</p>}
+        {success && <p className="mt-2 text-center text-sm text-green-600">{success}</p>}
 
         <div className="text-sm text-center">
           <Link
