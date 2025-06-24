@@ -9,7 +9,7 @@ i18n
   .use(initReactI18next)
   .init({
     fallbackLng: 'zh',
-    debug: true,
+    debug: false,
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],

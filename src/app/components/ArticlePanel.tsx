@@ -503,41 +503,62 @@ export default function ArticlePanel() {
     } else {
       // 短文播放逻辑
       const audioPromises = articleState.sentences.map((s, i) => {
-        const cacheKey = s.english + currentVoice + engine + currentSpeed;
+        const cacheKey = `${s.english}-${currentVoice}-${engine}-${currentSpeed}`;
         const cached = getAudioCache(cacheKey);
         console.log(`Sentence ${i}: "${s.english.substring(0, 30)}..." - Cache: ${cached ? 'HIT' : 'MISS'}`);
+        
         if (cached) {
           // 如果有缓存，直接返回缓存的URL，不调用getTTSUrl
           console.log(`Using cached audio for sentence ${i}`);
           return Promise.resolve(cached);
         }
+        
         // 只有在没有缓存时才调用getTTSUrl
         console.log(`Calling TTS API for sentence ${i}`);
+        
         let ttsText = s.english;
         let voice = currentVoice;
-        let extra: any = {};
+        
+        // 准备TTS选项
+        const ttsOptions: any = {
+          text: ttsText,
+          voice,
+          engine: engine as TTSEngine
+        };
+        
+        // 如果是Azure引擎，添加SSML处理
         if (engine === 'azure') {
-          ttsText = getAzureSsml(s.english, currentVoice, currentSpeed);
-          extra.ssml = true;
+          ttsOptions.text = getAzureSsml(s.english, currentVoice, currentSpeed);
+          ttsOptions.ssml = true;
         }
-        return getTTSUrl({ text: ttsText, voice, engine, ...extra }).then(url => {
-          if (url) {
-            console.log(`Caching audio for sentence ${i}`);
-            setAudioCache(cacheKey, url);
-          }
-          return url || '';
-        }).catch(error => {
-          console.error('TTS Error:', error);
-          if (error instanceof Error && error.message.includes('Daily play limit reached')) {
-            showLimitBannerWithMessage(error.message);
-          } else {
-            showLimitBannerWithMessage(t('Failed to generate audio. Please try again.'));
-          }
-          playAllAbortRef.current.aborted = true;
-          setIsPlayingAll(false);
-          setPlayingIndex(null);
-          throw error;
-        });
+        
+        console.log(`TTS options for sentence ${i}:`, ttsOptions);
+        
+        return getTTSUrl(ttsOptions)
+          .then(url => {
+            if (url) {
+              console.log(`TTS API success, caching audio for sentence ${i}`);
+              setAudioCache(cacheKey, url);
+              return url;
+            }
+            throw new Error('No URL returned from TTS service');
+          })
+          .catch(error => {
+            console.error(`TTS Error for sentence ${i}:`, error);
+            if (error instanceof Error) {
+              if (error.message.includes('Daily play limit reached')) {
+                showLimitBannerWithMessage(error.message);
+              } else {
+                showLimitBannerWithMessage(t('Failed to generate audio. Please try again.'));
+              }
+            } else {
+              showLimitBannerWithMessage(t('An unknown error occurred'));
+            }
+            playAllAbortRef.current.aborted = true;
+            setIsPlayingAll(false);
+            setPlayingIndex(null);
+            throw error;
+          });
       });
 
       // 顺序播放

@@ -82,22 +82,62 @@ const DialoguePanel: React.FC<DialoguePanelProps> = ({
   }
 
   const handleSpeak = async (text: string, idx: number, gender: 'male' | 'female') => {
-    if (loadingIndex !== null) return; // 禁止并发TTS
+    if (loadingIndex !== null) {
+      console.log('TTS already in progress, skipping');
+      return; // 禁止并发TTS
+    }
+    
     setLoadingIndex(idx);
-    
     const voice = VOICES[gender];
-    const cacheKey = text + voice + 'azure' + 'normal';
-    let url: string | null | undefined = getAudioCache(cacheKey);
+    const cacheKey = `${text}-${voice}-azure-normal`;
     
-    if (!url) {
-      try {
-        url = await getTTSUrl({ text, voice, engine: 'azure' });
+    console.log(`Initiating TTS for message ${idx}`, { text, voice, cacheKey });
+    
+    try {
+      // 尝试从缓存获取
+      let url = getAudioCache(cacheKey);
+      
+      if (!url) {
+        console.log(`Cache miss for message ${idx}, calling TTS API`);
+        
+        // 调用新的 TTS API
+        const ttsOptions = { 
+          text, 
+          voice,
+          engine: 'azure' as TTSEngine
+        };
+        console.log('Calling getTTSUrl with options:', ttsOptions);
+        url = await getTTSUrl(ttsOptions);
+        
         if (url) {
+          console.log(`TTS API success, caching result for message ${idx}`);
           setAudioCache(cacheKey, url);
+        } else {
+          throw new Error('Failed to get TTS URL');
         }
-      } catch (error) {
-        console.error('TTS failed:', error);
-        if (error instanceof Error && error.message.includes('Daily play limit reached')) {
+      } else {
+        console.log(`Cache hit for message ${idx}`);
+      }
+      
+      // 播放音频
+      if (url && audioRef.current) {
+        console.log(`Playing audio for message ${idx}`);
+        audioRef.current.src = url;
+        audioRef.current.onended = () => setLoadingIndex(null);
+        audioRef.current.onerror = (e) => {
+          console.error('Audio playback error:', e);
+          setLoadingIndex(null);
+          showLimitBannerWithMessage('Failed to play audio');
+        };
+        await audioRef.current.play();
+      }
+      
+    } catch (error) {
+      console.error('TTS failed for message', idx, ':', error);
+      setLoadingIndex(null);
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Daily play limit reached')) {
           showLimitBannerWithMessage(error.message);
         } else {
           showLimitBannerWithMessage(t('Failed to generate audio. Please try again.'));
