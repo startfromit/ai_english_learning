@@ -1,0 +1,16 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+        - main
+
+jobs:
+  run-push-image:
+    uses: ./.github/workflows/push_image.yaml
+    secrets: inherit
+
+  run-update:
+    needs: run-push-image
+    uses: ./.github/workflows/update.yaml
+    secrets: inherit 
