@@ -4,6 +4,7 @@ import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import { useTranslation } from 'react-i18next'
 
 interface LoginModalProps {
   isOpen: boolean
@@ -15,10 +16,11 @@ interface LoginModalProps {
 export default function LoginModal({ 
   isOpen, 
   onClose, 
-  title = "Login Required", 
-  message = "Please sign in to continue" 
+  title,
+  message
 }: LoginModalProps) {
   const router = useRouter()
+  const { t } = useTranslation()
 
   const handleLogin = () => {
     onClose()
@@ -71,12 +73,12 @@ export default function LoginModal({
 
               {/* Title */}
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white text-center mb-2">
-                {title}
+                {title || t('login_required_modal_title', 'Login Required')}
               </h3>
 
               {/* Message */}
               <p className="text-gray-600 dark:text-gray-300 text-center mb-6">
-                {message}
+                {message || t('login_required_modal_message', 'Please sign in to continue')}
               </p>
 
               {/* Buttons */}
@@ -85,13 +87,13 @@ export default function LoginModal({
                   onClick={handleLogin}
                   className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                 >
-                  Sign In
+                  {t('sign_in', 'Sign In')}
                 </button>
                 <button
                   onClick={handleSignup}
                   className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors"
                 >
-                  Sign Up
+                  {t('sign_up', 'Sign Up')}
                 </button>
               </div>
             </div>

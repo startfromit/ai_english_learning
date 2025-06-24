@@ -30,7 +30,7 @@ export default function SignIn() {
       })
 
       if (result?.error) {
-        setError(result.error)
+        setError(result.error === 'CredentialsSignin' ? t('credentials_signin_error', 'Incorrect email or password. Please try again.') : result.error)
       } else if (result?.ok) {
         router.push(redirectTo)
         router.refresh()

@@ -76,5 +76,16 @@
   "send_verification_code": "Send Verification Code",
   "sending": "Sending...",
   "full_name": "Full Name",
-  "enter_verification_code": "Enter Verification Code"
+  "enter_verification_code": "Enter Verification Code",
+  "login_required_modal_title": "Login Required",
+  "login_required_modal_message": "Please sign in to continue",
+  "sign_in": "Sign In",
+  "verification_code_sent": "Verification code sent. Please check your email.",
+  "or_continue_with": "Or continue with",
+  "already_have_account": "Already have an account?",
+  "credentials_signin_error": "Incorrect email or password. Please try again.",
+  "sign_up_failed": "Sign up failed.",
+  "failed_to_send_verification_code": "Failed to send verification code.",
+  "an_unexpected_error_occurred": "An unexpected error occurred.",
+  "sign_in_failed": "Sign in failed: {{error}}"
 } 

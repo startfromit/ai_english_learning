@@ -33,10 +33,10 @@ export default function SignUpPage() {
 
     if (res.ok) {
       setOtpSent(true)
-      setSuccess('Verification code sent. Please check your email.')
+      setSuccess(String(t('verification_code_sent', 'Verification code sent.')))
     } else {
       const { error } = await res.json()
-      setError(error || 'Failed to send verification code.')
+      setError(error ? String(t(error, error)) : String(t('failed_to_send_verification_code', 'Failed to send verification code.')))
     }
     setLoading(false)
   }
@@ -57,7 +57,7 @@ export default function SignUpPage() {
 
       const data = await apiRes.json()
       if (!apiRes.ok) {
-        throw new Error(data.error || 'Sign up failed.')
+        throw new Error(typeof data.error === 'string' ? String(t(data.error, data.error)) : String(t('sign_up_failed', 'Sign up failed.')))
       }
 
       console.log('Registration successful, attempting to sign in...', {
@@ -84,7 +84,7 @@ export default function SignUpPage() {
       if (!signInResult?.ok) {
         const errorMessage = signInResult?.error || 'An unknown error occurred during sign in';
         console.error('Sign in failed:', errorMessage);
-        setError(`Sign in failed: ${errorMessage}`);
+        setError(String(t('sign_in_failed', { error: errorMessage })));
         return;
       }
       
@@ -98,7 +98,7 @@ export default function SignUpPage() {
 
     } catch (err) {
       const error = err as Error
-      setError(error.message || 'An unexpected error occurred.')
+      setError(typeof error.message === 'string' ? String(t(error.message, error.message)) : String(t('an_unexpected_error_occurred', 'An unexpected error occurred.')))
     } finally {
       setLoading(false)
     }
