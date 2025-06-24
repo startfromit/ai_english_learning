@@ -14,24 +14,35 @@ function ProfileContent() {
   const router = useRouter()
 
   const fetchRemainingPlays = async () => {
-    if (!user) return
+    if (!user) {
+      console.log('No user found, skipping fetchRemainingPlays');
+      setLoadingPlays(false);
+      return;
+    }
     
     try {
-      setError(null)
-      const response = await fetch('/api/get-remaining-plays')
-      const data = await response.json()
+      setError(null);
+      setLoadingPlays(true);
+      
+      console.log('Fetching remaining plays for user:', user.email);
+      const response = await fetch('/api/get-remaining-plays', {
+        credentials: 'include' // Important for sending cookies
+      });
+      
+      const data = await response.json();
+      console.log('Remaining plays response:', data);
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch remaining plays')
+        throw new Error(data.error || 'Failed to fetch remaining plays');
       }
       
-      setRemainingPlays(data.remaining ?? 0)
+      setRemainingPlays(data.remaining ?? 0);
     } catch (error) {
-      console.error('Error fetching remaining plays:', error)
-      setError(error instanceof Error ? error.message : 'Failed to load play count')
-      setRemainingPlays(null)
+      console.error('Error fetching remaining plays:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load play count');
+      setRemainingPlays(null);
     } finally {
-      setLoadingPlays(false)
+      setLoadingPlays(false);
     }
   }
 
