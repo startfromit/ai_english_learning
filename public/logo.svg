@@ -1,0 +1,35 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle with gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1D4ED8;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E5E7EB;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main background circle -->
+  <circle cx="60" cy="60" r="55" fill="url(#bgGradient)" stroke="#1E40AF" stroke-width="2"/>
+  
+  <!-- AI/Neural network dots -->
+  <circle cx="45" cy="35" r="4" fill="url(#textGradient)"/>
+  <circle cx="75" cy="35" r="4" fill="url(#textGradient)"/>
+  <circle cx="60" cy="50" r="4" fill="url(#textGradient)"/>
+  <circle cx="37" cy="65" r="4" fill="url(#textGradient)"/>
+  <circle cx="83" cy="65" r="4" fill="url(#textGradient)"/>
+  <circle cx="60" cy="80" r="4" fill="url(#textGradient)"/>
+  
+  <!-- Neural network connections -->
+  <path d="M45 35 L60 50 L75 35" stroke="url(#textGradient)" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M60 50 L37 65 L83 65" stroke="url(#textGradient)" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M37 65 L60 80 L83 65" stroke="url(#textGradient)" stroke-width="2" fill="none" opacity="0.6"/>
+  
+  <!-- Voice wave lines -->
+  <path d="M30 95 Q37 90 45 95 Q52 100 60 95 Q67 90 75 95 Q82 100 90 95" stroke="url(#textGradient)" stroke-width="4" fill="none"/>
+  
+  <!-- English "E" letter -->
+  <path d="M52 20 L68 20 L68 24 L56 24 L56 28 L64 28 L64 32 L56 32 L56 36 L68 36 L68 40 L52 40 Z" fill="url(#textGradient)"/>
+</svg> 
