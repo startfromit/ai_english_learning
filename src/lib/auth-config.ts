@@ -151,7 +151,7 @@ export const authOptions: NextAuthOptions = {
         try {
           const supabase = createClient()
           
-          // Check if user already exists in Supabase
+          // Check if user already exists in Supabase by email
           const { data: existingUser, error: selectError } = await supabase
             .from('users')
             .select('*')
@@ -167,19 +167,17 @@ export const authOptions: NextAuthOptions = {
 
           if (!existingUser) {
             console.log('Creating new user in Supabase:', {
-              id: user.id,
               email: user.email,
               name: user.name,
               provider: account?.provider || 'credentials',
               email_verified: account?.provider === 'github' ? true : false
             })
 
-            // Create new user in Supabase
+            // Create new user in Supabase (let Supabase generate the ID)
             const { data: newUser, error: insertError } = await supabase
               .from('users')
               .insert([
                 {
-                  id: user.id,
                   email: user.email,
                   name: user.name,
                   avatar_url: user.image,
@@ -196,6 +194,8 @@ export const authOptions: NextAuthOptions = {
               // Just log the error and continue
             } else {
               console.log('User created successfully in Supabase:', newUser)
+              // Update the user.id to match Supabase ID for session
+              user.id = newUser.id
             }
           } else {
             console.log('User already exists in Supabase:', existingUser)
@@ -208,7 +208,7 @@ export const authOptions: NextAuthOptions = {
                   avatar_url: user.image,
                   updated_at: new Date().toISOString()
                 })
-                .eq('id', user.id)
+                .eq('id', existingUser.id)
                 .select()
                 .single()
               
@@ -218,6 +218,8 @@ export const authOptions: NextAuthOptions = {
                 console.log('User updated successfully:', updatedUser)
               }
             }
+            // Update the user.id to match Supabase ID for session
+            user.id = existingUser.id
           }
         } catch (error) {
           console.error('Unexpected error in signIn callback:', error)
@@ -268,7 +270,9 @@ export const authOptions: NextAuthOptions = {
       
       // 如果是登录或更新操作
       if (user) {
+        // Use the user.id which should now be the Supabase ID
         token.id = user.id;
+        token.sub = user.id; // Also update sub to match
         
         // 获取用户角色
         try {
