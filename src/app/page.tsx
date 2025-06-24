@@ -1,6 +1,5 @@
 import { Suspense } from 'react'
 import ArticlePanel from './components/ArticlePanel'
-import SessionDebug from './components/SessionDebug'
 
 export default function Home() {
   return (
@@ -9,8 +8,7 @@ export default function Home() {
         <Suspense fallback={<div>Loading...</div>}>
           <ArticlePanel />
         </Suspense>
-        <SessionDebug />
       </div>
     </div>
   )
-} 
+}

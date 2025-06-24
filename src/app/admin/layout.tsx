@@ -1,11 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useEffect, useState, useCallback } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import SignOutButton from '@/components/SignOutButton';
 import { Session } from 'next-auth';
 import { Inter } from 'next/font/google';
+import dynamic from 'next/dynamic';
 import '@/app/globals.css';
+
+// Dynamically import SessionDebug with SSR disabled
+const SessionDebug = dynamic(
+  () => import('@/app/components/SessionDebug'),
+  { ssr: false }
+);
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -118,19 +126,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               {session?.user?.email}
               {session?.user?.role === 'admin' && ' (Admin)'}
             </span>
-            <form action="/api/auth/signout" method="POST">
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
-              >
-                Sign Out
-              </button>
-            </form>
+            <SignOutButton />
           </div>
         </div>
       </header>
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {children}
+        <div className="mt-4 p-4 bg-white rounded-lg shadow">
+          <h2 className="text-lg font-semibold mb-2">Debug Information</h2>
+          <div className="mt-2">
+            <SessionDebug />
+          </div>
+        </div>
       </main>
     </div>
   );
