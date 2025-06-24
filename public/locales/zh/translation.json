@@ -46,5 +46,20 @@
   "favorite": "收藏",
   "unfavorite": "取消收藏",
   "favorited": "已收藏",
-  "Failed to generate audio. Please try again.": "可用播放次数不足，目前未开放充值渠道，请明日再试（每日限制：20次）"
+  "Failed to generate audio. Please try again.": "可用播放次数不足，目前未开放充值渠道，请明日再试（每日限制：20次）",
+  "profile": "个人资料",
+  "sign_out": "退出登录",
+  "account_info": "账户信息",
+  "email": "邮箱",
+  "name": "昵称",
+  "not_provided": "未填写",
+  "usage": "使用情况",
+  "refresh": "刷新",
+  "refreshing": "刷新中...",
+  "retry": "重试",
+  "retrying": "重试中...",
+  "remaining_plays": "今日剩余语音次数：",
+  "loading": "加载中...",
+  "reset_tip": "每日免费额度将在午夜（UTC）重置。",
+  "back_to_home": "返回首页"
 } 

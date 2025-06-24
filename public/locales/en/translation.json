@@ -46,5 +46,20 @@
   "favorite": "Favorite",
   "unfavorite": "Unfavorite",
   "favorited": "Favorited",
-  "Failed to generate audio. Please try again.": "Insufficient play credits. Recharge feature is not available yet. Please try again tomorrow. (Daily limit: 20 plays)"
+  "Failed to generate audio. Please try again.": "Insufficient play credits. Recharge feature is not available yet. Please try again tomorrow. (Daily limit: 20 plays)",
+  "profile": "Profile",
+  "sign_out": "Sign out",
+  "account_info": "Account Information",
+  "email": "Email",
+  "name": "Name",
+  "not_provided": "Not provided",
+  "usage": "Usage",
+  "refresh": "Refresh",
+  "refreshing": "Refreshing...",
+  "retry": "Retry",
+  "retrying": "Retrying...",
+  "remaining_plays": "Remaining audio plays today:",
+  "loading": "Loading...",
+  "reset_tip": "Your free daily limit resets at midnight (UTC).",
+  "back_to_home": "Back to Home"
 } 

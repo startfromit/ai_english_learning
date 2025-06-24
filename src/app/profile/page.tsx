@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import AuthGuard from '@/components/AuthGuard'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 
 function ProfileContent() {
   const { user, loading } = useAuth()
@@ -12,6 +13,7 @@ function ProfileContent() {
   const [loadingPlays, setLoadingPlays] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const { t } = useTranslation()
 
   const fetchRemainingPlays = async () => {
     if (!user) {
@@ -76,31 +78,31 @@ function ProfileContent() {
   return (
     <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Your Profile</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('profile', 'Your Profile')}</h1>
       </div>
       
       <div className="space-y-6">
         <div>
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white">Account Information</h2>
+          <h2 className="text-lg font-medium text-gray-900 dark:text-white">{t('account_info', 'Account Information')}</h2>
           <div className="mt-2 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              <span className="font-medium">Email:</span> {user?.email}
+              <span className="font-medium">{t('email', 'Email')}:</span> {user?.email}
             </p>
             <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
-              <span className="font-medium">Name:</span> {user?.name || 'Not provided'}
+              <span className="font-medium">{t('name', 'Name')}:</span> {user?.name || t('not_provided', 'Not provided')}
             </p>
           </div>
         </div>
         
         <div>
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-white">Usage</h2>
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">{t('usage', 'Usage')}</h2>
             <button
               onClick={refreshPlays}
               disabled={loadingPlays}
               className="text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 disabled:opacity-50 px-2 py-1 border border-indigo-200 dark:border-indigo-800 rounded-md"
             >
-              {loadingPlays ? 'Refreshing...' : 'Refresh'}
+              {loadingPlays ? t('refreshing', 'Refreshing...') : t('refresh', 'Refresh')}
             </button>
           </div>
           <div className="mt-2 bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg">
@@ -112,15 +114,15 @@ function ProfileContent() {
                   className="text-indigo-600 hover:underline"
                   disabled={loadingPlays}
                 >
-                  {loadingPlays ? 'Retrying...' : 'Retry'}
+                  {loadingPlays ? t('retrying', 'Retrying...') : t('retry', 'Retry')}
                 </button>
               </div>
             ) : (
               <>
                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                  <span className="font-medium">Remaining audio plays today:</span>{' '}
+                  <span className="font-medium">{t('remaining_plays', 'Remaining audio plays today:')}</span>{' '}
                   <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                    {loadingPlays ? 'Loading...' : `${remainingPlays ?? 'N/A'}`} / 20
+                    {loadingPlays ? t('loading', 'Loading...') : `${remainingPlays ?? 'N/A'}`} / 20
                   </span>
                 </p>
                 {!loadingPlays && remainingPlays !== null && (
@@ -132,7 +134,7 @@ function ProfileContent() {
                       ></div>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                      Your free daily limit resets at midnight (UTC).
+                      {t('reset_tip', 'Your free daily limit resets at midnight (UTC).')}
                     </p>
                   </>
                 )}
@@ -146,13 +148,13 @@ function ProfileContent() {
             href="/"
             className="text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
           >
-            &larr; Back to Home
+            &larr; {t('back_to_home', 'Back to Home')}
           </Link>
           <button
             onClick={() => router.push('/auth/signout')}
             className="text-sm font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
           >
-            Sign out
+            {t('sign_out', 'Sign out')}
           </button>
         </div>
       </div>
