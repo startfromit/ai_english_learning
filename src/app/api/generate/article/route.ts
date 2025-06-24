@@ -7,7 +7,7 @@ import { getLlm, LlmProvider } from '@/lib/llm';
 export async function POST(request: Request) {
   const provider = (process.env.LLM_PROVIDER || 'openai') as LlmProvider;
   const { topic = '', theme = '科技', length = 200 } = await request.json();
-  
+
   // 防攻击：强制限制长度
   const safeLength = Math.max(100, Math.min(500, Number(length) || 200));
 
@@ -81,8 +81,15 @@ Generate a topic that is specific, debatable, and interesting for English learne
   `;
 
   try {
-    const response = await llm.call(prompt);
-    const result = await parser.parse(response);
+    // 使用 invoke 方法并传递消息数组
+    const response = await llm.invoke([
+      { role: 'system', content: 'You are a helpful assistant that generates English learning materials.' },
+      { role: 'user', content: prompt }
+    ]);
+    
+    // 从响应中获取内容
+    const content = response.content;
+    const result = await parser.parse(content);
     
     return NextResponse.json({
       topic: finalTopic,

@@ -732,7 +732,7 @@ export default function ArticlePanel() {
         body.style = dialogueStyle;
       }
       
-      const apiEndpoint = contentType === 'dialogue' ? '/api/generate-dialogue' : '/api/generate-article';
+      const apiEndpoint = contentType === 'dialogue' ? '/api/generate/dialogue' : '/api/generate/article';
       const res = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

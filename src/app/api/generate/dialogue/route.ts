@@ -113,8 +113,18 @@ export async function POST(request: Request) {
   `;
 
   try {
-    const response = await llm.call(prompt);
-    const result = await parser.parse(response);
+    // 初始化 LLM 客户端
+    const llm = getLlm(provider);
+    
+    // 使用 invoke 方法并传递消息数组
+    const response = await llm.invoke([
+      { role: 'system', content: 'You are a helpful assistant that generates English learning dialogues.' },
+      { role: 'user', content: prompt }
+    ]);
+    
+    // 从响应中获取内容
+    const content = response.content;
+    const result = await parser.parse(content);
     
     return NextResponse.json({
       style: {
