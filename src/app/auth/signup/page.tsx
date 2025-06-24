@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import OtpInput from 'react-otp-input'
 import { signIn } from 'next-auth/react'
+import { useTranslation } from 'react-i18next'
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('')
@@ -16,6 +17,7 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false)
   const [otpSent, setOtpSent] = useState(false)
   const router = useRouter()
+  const { t } = useTranslation()
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -107,7 +109,7 @@ export default function SignUpPage() {
       <div className="w-full max-w-md space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-            Create your account
+            {t('create_account', 'Create your account')}
           </h2>
         </div>
         {!otpSent ? (
@@ -115,7 +117,7 @@ export default function SignUpPage() {
             <div className="rounded-md shadow-sm -space-y-px">
               <div>
                 <label htmlFor="email-address" className="sr-only">
-                  Email address
+                  {t('email_address', 'Email address')}
                 </label>
                 <input
                   id="email-address"
@@ -124,7 +126,7 @@ export default function SignUpPage() {
                   autoComplete="email"
                   required
                   className="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 sm:text-sm"
-                  placeholder="Email address"
+                  placeholder={t('email_address', 'Email address')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -137,7 +139,7 @@ export default function SignUpPage() {
                 disabled={loading}
                 className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
               >
-                {loading ? 'Sending...' : 'Send Verification Code'}
+                {loading ? t('sending', 'Sending...') : t('send_verification_code', 'Send Verification Code')}
               </button>
             </div>
           </form>
@@ -146,7 +148,7 @@ export default function SignUpPage() {
             <div className="rounded-md shadow-sm -space-y-px">
               <div>
                 <label htmlFor="name" className="sr-only">
-                  Full Name
+                  {t('full_name', 'Full Name')}
                 </label>
                 <input
                   id="name"
@@ -155,14 +157,14 @@ export default function SignUpPage() {
                   autoComplete="name"
                   required
                   className="relative block w-full appearance-none rounded-none rounded-t-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 sm:text-sm"
-                  placeholder="Full Name"
+                  placeholder={t('full_name', 'Full Name')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
               <div>
                 <label htmlFor="password" className="sr-only">
-                  Password
+                  {t('password', 'Password')}
                 </label>
                 <input
                   id="password"
@@ -171,7 +173,7 @@ export default function SignUpPage() {
                   autoComplete="new-password"
                   required
                   className="relative block w-full appearance-none rounded-none border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 sm:text-sm"
-                  placeholder="Password"
+                  placeholder={t('password', 'Password')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -180,7 +182,7 @@ export default function SignUpPage() {
             
             <div className="flex flex-col items-center space-y-4">
                <label htmlFor="otp" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Enter Verification Code
+                  {t('enter_verification_code', 'Enter Verification Code')}
                 </label>
                 <OtpInput
                   value={otp}
@@ -198,7 +200,7 @@ export default function SignUpPage() {
                 disabled={loading || otp.length < 6}
                 className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
               >
-                {loading ? 'Verifying...' : 'Create Account & Sign In'}
+                {loading ? t('signing_in', 'Signing in...') : t('sign_up', 'Sign up')}
               </button>
             </div>
           </form>
@@ -208,12 +210,15 @@ export default function SignUpPage() {
         {success && <p className="mt-2 text-center text-sm text-green-600">{success}</p>}
 
         <div className="text-sm text-center">
-          <Link
-            href="/auth/signin"
-            className="font-medium text-indigo-600 hover:text-indigo-500"
-          >
-            Already have an account? Sign in
-          </Link>
+          <p className="text-sm text-gray-600">
+            {t('already_have_account', 'Already have an account?')}{' '}
+            <Link
+              href="/auth/signin"
+              className="font-medium text-indigo-600 hover:text-indigo-500"
+            >
+              {t('sign_in', 'Sign In')}
+            </Link>
+          </p>
         </div>
       </div>
     </div>

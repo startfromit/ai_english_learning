@@ -61,5 +61,20 @@
   "remaining_plays": "今日剩余语音次数：",
   "loading": "加载中...",
   "reset_tip": "每日免费额度将在午夜（UTC）重置。",
-  "back_to_home": "返回首页"
+  "back_to_home": "返回首页",
+  "sign_in_title": "登录你的账户",
+  "sign_in_with_github": "使用 GitHub 登录",
+  "sign_in_with_email": "使用邮箱登录",
+  "signing_in": "登录中...",
+  "signing_in_with_github": "GitHub 登录中...",
+  "email_address": "邮箱地址",
+  "password": "密码",
+  "forgot_password": "忘记密码？",
+  "no_account": "还没有账户？",
+  "sign_up": "注册",
+  "create_account": "创建你的账户",
+  "send_verification_code": "发送验证码",
+  "sending": "发送中...",
+  "full_name": "姓名",
+  "enter_verification_code": "输入验证码"
 } 

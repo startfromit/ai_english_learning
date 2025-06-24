@@ -61,5 +61,20 @@
   "remaining_plays": "Remaining audio plays today:",
   "loading": "Loading...",
   "reset_tip": "Your free daily limit resets at midnight (UTC).",
-  "back_to_home": "Back to Home"
+  "back_to_home": "Back to Home",
+  "sign_in_title": "Sign in to your account",
+  "sign_in_with_github": "Sign in with GitHub",
+  "sign_in_with_email": "Sign in with Email",
+  "signing_in": "Signing in...",
+  "signing_in_with_github": "Signing in with GitHub...",
+  "email_address": "Email address",
+  "password": "Password",
+  "forgot_password": "Forgot your password?",
+  "no_account": "Don't have an account?",
+  "sign_up": "Sign up",
+  "create_account": "Create your account",
+  "send_verification_code": "Send Verification Code",
+  "sending": "Sending...",
+  "full_name": "Full Name",
+  "enter_verification_code": "Enter Verification Code"
 } 
