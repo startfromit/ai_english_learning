@@ -37,21 +37,24 @@ export interface Database {
       }
       user_usage: {
         Row: {
-          user_id: string
-          play_count: number
-          usage_date: string
+          id: string
+          daily_play_count: number
+          last_play_date: string
+          created_at: string
           updated_at: string
         }
         Insert: {
-          user_id: string
-          play_count?: number
-          usage_date: string
+          id: string
+          daily_play_count?: number
+          last_play_date?: string
+          created_at?: string
           updated_at?: string
         }
         Update: {
-          user_id?: string
-          play_count?: number
-          usage_date?: string
+          id?: string
+          daily_play_count?: number
+          last_play_date?: string
+          created_at?: string
           updated_at?: string
         }
       }

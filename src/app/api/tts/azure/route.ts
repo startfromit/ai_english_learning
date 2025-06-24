@@ -75,107 +75,26 @@ export async function POST(request: Request) {
 
     const userId = userData.id;
     
-    // First, try to get the existing user usage record
-    const { data: existingUsage, error: fetchError } = await supabase
-      .from('user_usage')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-      
-    let usageData = existingUsage;
-    
-    // If no record exists, create one
-    if (!existingUsage || fetchError) {
-      const { data: newUsage, error: createError } = await supabase
-        .from('user_usage')
-        .insert({
-          id: userId,
-          daily_play_count: 0,
-          last_play_date: new Date().toISOString().split('T')[0]
-        })
-        .select()
-        .single();
-        
-      if (createError || !newUsage) {
-        console.error(`[${requestId}] [Azure TTS] Failed to create user usage record:`, createError);
-        return errorResponse('Failed to initialize user usage', 500);
-      }
-      
-      usageData = newUsage;
-    }
-    
-    console.log(`[${requestId}] [Azure TTS] User ID: ${userId}`);
-    
-    // Check if we need to reset the daily count
-    const today = new Date().toISOString().split('T')[0];
-    const lastPlayDate = usageData?.last_play_date || today;
-    
-    let currentCount = 0;
-    
-    if (lastPlayDate === today) {
-      // Get current count first
-      const { data: currentData, error: fetchError } = await supabase
-        .from('user_usage')
-        .select('daily_play_count')
-        .eq('id', userId)
-        .single();
-        
-      if (fetchError || !currentData) {
-        throw new Error('Failed to fetch current play count');
-      }
-      
-      // Increment the count
-      const newCount = (currentData.daily_play_count || 0) + 1;
-      
-      const { data: updated, error: updateError } = await supabase
-        .from('user_usage')
-        .update({
-          daily_play_count: newCount,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId)
-        .select('daily_play_count')
-        .single();
-        
-      if (updateError || !updated) {
-        console.error(`[${requestId}] [Azure TTS] Failed to increment play count:`, updateError);
-        return errorResponse('Failed to update play count', 500, updateError);
-      }
-      
-      currentCount = updated.daily_play_count;
-    } else {
-      // Reset the count for a new day
-      const { data: updated, error: updateError } = await supabase
-        .from('user_usage')
-        .upsert({
-          id: userId,
-          daily_play_count: 1,
-          last_play_date: today,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'id'
-        })
-        .select('daily_play_count')
-        .single();
-        
-      if (updateError || !updated) {
-        console.error(`[${requestId}] [Azure TTS] Failed to reset play count:`, updateError);
-        return errorResponse('Failed to reset play count', 500, updateError);
-      }
-      
-      currentCount = 1;
-    }
-    
-    console.log(`[${requestId}] [Azure TTS] New play count:`, currentCount);
+    // Use the database function to increment play count
+    const { data: newCount, error: countError } = await supabase
+      .rpc('increment_play_count', { user_id: userId });
 
-    if (currentCount > MAX_DAILY_PLAYS) {
+    if (countError) {
+      console.error(`[${requestId}] [Azure TTS] Error incrementing play count:`, countError);
+      return errorResponse('Failed to update play count', 500, countError);
+    }
+
+    console.log(`[${requestId}] [Azure TTS] User ID: ${userId}, New play count: ${newCount}`);
+
+    // Check daily limit
+    if (newCount > MAX_DAILY_PLAYS) {
       const message = `Daily play limit of ${MAX_DAILY_PLAYS} reached`;
       console.warn(`[${requestId}] [Azure TTS] ${message}`);
       return NextResponse.json(
         { 
           error: message,
           remaining: 0,
-          current: currentCount,
+          current: newCount,
           limit: MAX_DAILY_PLAYS
         }, 
         { 
@@ -248,13 +167,13 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         url: audioUrl,
-        remaining: Math.max(0, MAX_DAILY_PLAYS - currentCount),
+        remaining: Math.max(0, MAX_DAILY_PLAYS - newCount),
         limit: MAX_DAILY_PLAYS,
         requestId
       }, {
         headers: {
           'X-RateLimit-Limit': MAX_DAILY_PLAYS.toString(),
-          'X-RateLimit-Remaining': Math.max(0, MAX_DAILY_PLAYS - currentCount).toString(),
+          'X-RateLimit-Remaining': Math.max(0, MAX_DAILY_PLAYS - newCount).toString(),
           'X-Request-ID': requestId,
           'X-Response-Time': totalTime.toString()
         }

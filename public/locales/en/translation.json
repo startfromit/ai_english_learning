@@ -4,6 +4,7 @@
   "article": "Article",
   "dialogue": "Dialogue",
   "dialogueStyle": "Dialogue Style:",
+  "generationSettings": "Generation Settings",
   "style_casual": "Casual",
   "style_casual_desc": "Relaxed chat between friends",
   "style_business": "Business",

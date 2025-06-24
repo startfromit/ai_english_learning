@@ -84,27 +84,26 @@ export async function canPlayAudio(): Promise<{ canPlay: boolean; remaining: num
     const supabase = createClient()
     const today = new Date().toISOString().split('T')[0]
     
-    // Get or create user usage record
+    // Get or create user usage record using new table structure
     const { data: usage, error } = await supabase
       .from('user_usage')
-      .select('play_count, usage_date')
-      .eq('user_id', user.id)
-      .eq('usage_date', today)
-      .single() as { data: UserUsage | null; error: any }
+      .select('daily_play_count, last_play_date')
+      .eq('id', user.id)
+      .single()
 
     const MAX_DAILY_PLAYS = 20
     
     // If no record exists or it's a new day, reset the counter
-    if (!usage || usage.usage_date !== today) {
+    if (!usage || usage.last_play_date !== today) {
       const { error: upsertError } = await supabase
         .from('user_usage')
         .upsert({
-          user_id: user.id,
-          play_count: 1,
-          usage_date: today,
+          id: user.id,
+          daily_play_count: 1,
+          last_play_date: today,
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'user_id,usage_date',
+          onConflict: 'id',
           ignoreDuplicates: false
         })
       
@@ -117,7 +116,7 @@ export async function canPlayAudio(): Promise<{ canPlay: boolean; remaining: num
     }
     
     // Check if user has reached the limit
-    if (usage.play_count >= MAX_DAILY_PLAYS) {
+    if (usage.daily_play_count >= MAX_DAILY_PLAYS) {
       return { canPlay: false, remaining: 0 }
     }
     
@@ -125,11 +124,10 @@ export async function canPlayAudio(): Promise<{ canPlay: boolean; remaining: num
     const { error: updateError } = await supabase
       .from('user_usage')
       .update({
-        play_count: usage.play_count + 1,
+        daily_play_count: usage.daily_play_count + 1,
         updated_at: new Date().toISOString()
       })
-      .eq('user_id', user.id)
-      .eq('usage_date', today)
+      .eq('id', user.id)
     
     if (updateError) {
       console.error('Error incrementing play count:', updateError)
@@ -138,7 +136,7 @@ export async function canPlayAudio(): Promise<{ canPlay: boolean; remaining: num
     
     return { 
       canPlay: true, 
-      remaining: MAX_DAILY_PLAYS - (usage.play_count + 1)
+      remaining: MAX_DAILY_PLAYS - (usage.daily_play_count + 1)
     }
   } catch (error) {
     console.error('Error in canPlayAudio:', error)
@@ -156,14 +154,18 @@ export async function getRemainingPlays(): Promise<number> {
   
   const { data: usage, error } = await supabase
     .from('user_usage')
-    .select('play_count')
-    .eq('user_id', user.id)
-    .eq('usage_date', today)
-    .single() as { data: Pick<UserUsage, 'play_count'> | null; error: any }
+    .select('daily_play_count, last_play_date')
+    .eq('id', user.id)
+    .single()
 
   if (error || !usage) return 20 // Default to max if no record exists
   
-  return Math.max(0, 20 - (usage.play_count || 0))
+  // If it's a new day, reset the count
+  if (usage.last_play_date !== today) {
+    return 20
+  }
+  
+  return Math.max(0, 20 - (usage.daily_play_count || 0))
 }
 
 export const authOptions: NextAuthOptions = {
