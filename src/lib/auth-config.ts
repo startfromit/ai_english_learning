@@ -6,58 +6,6 @@ import GithubProvider from 'next-auth/providers/github'
 export const authOptions: NextAuthOptions = {
   providers: [
     // Provider for allowing users to sign up and then get immediately signed in
-    CredentialsProvider({
-      id: 'supabase',
-      name: 'Supabase',
-      credentials: {
-        accessToken: { type: 'text' },
-        refreshToken: { type: 'text' },
-      },
-      async authorize(credentials) {
-        if (!credentials?.accessToken || !credentials?.refreshToken) {
-          console.error("Authorize Error: Access Token or Refresh Token was not provided.");
-          return null;
-        }
-
-        const supabase = createClient();
-
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: credentials.accessToken,
-          refresh_token: credentials.refreshToken,
-        });
-
-        if (sessionError) {
-          console.error(`Authorize Error: Supabase setSession failed: ${sessionError.message}`);
-          return null;
-        }
-
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-        if (userError || !user) {
-          console.error(`Authorize Error: Supabase getUser failed. User: ${!!user}, Error: ${userError?.message}`);
-          return null;
-        }
-        
-        // Get user profile from public.users table
-        const { data: publicUser } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (!publicUser) {
-          console.error(`Authorize Error: User not found in public.users table`);
-          return null;
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: publicUser.name || user.email,
-          image: publicUser.avatar_url
-        };
-      },
-    }),
     GithubProvider({
       clientId: process.env.GITHUB_ID!,
       clientSecret: process.env.GITHUB_SECRET!,
