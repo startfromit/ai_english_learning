@@ -2,6 +2,7 @@ name: Build and Push Docker Image to Aliyun
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   build-and-push:
