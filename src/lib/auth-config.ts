@@ -62,6 +62,14 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GITHUB_ID!,
       clientSecret: process.env.GITHUB_SECRET!,
       allowDangerousEmailAccountLinking: true,
+      profile(profile) {
+        return {
+          id: profile.id.toString(),
+          name: profile.name || profile.login,
+          email: profile.email,
+          image: profile.avatar_url,
+        }
+      },
     }),
     CredentialsProvider({
       name: 'Credentials',
@@ -126,7 +134,9 @@ export const authOptions: NextAuthOptions = {
       console.log('SignIn callback triggered:', { 
         provider: account?.provider, 
         userEmail: user?.email,
-        userName: user?.name 
+        userName: user?.name,
+        userId: user?.id,
+        profile: profile
       })
 
       // GitHub users are automatically verified (they have verified email from GitHub)
@@ -148,6 +158,8 @@ export const authOptions: NextAuthOptions = {
             .eq('email', user.email)
             .single()
 
+          console.log('Existing user check:', { existingUser, selectError })
+
           if (selectError && selectError.code !== 'PGRST116') {
             console.error('Error checking existing user:', selectError)
             return '/auth/error?error=DatabaseError'
@@ -157,11 +169,13 @@ export const authOptions: NextAuthOptions = {
             console.log('Creating new user in Supabase:', {
               id: user.id,
               email: user.email,
-              name: user.name
+              name: user.name,
+              provider: account?.provider || 'credentials',
+              email_verified: account?.provider === 'github' ? true : false
             })
 
             // Create new user in Supabase
-            const { error: insertError } = await supabase
+            const { data: newUser, error: insertError } = await supabase
               .from('users')
               .insert([
                 {
@@ -173,19 +187,21 @@ export const authOptions: NextAuthOptions = {
                   email_verified: account?.provider === 'github' ? true : false
                 }
               ])
+              .select()
+              .single()
             
             if (insertError) {
               console.error('Error creating user in Supabase:', insertError)
               // Don't fail the login if user creation fails
               // Just log the error and continue
             } else {
-              console.log('User created successfully in Supabase')
+              console.log('User created successfully in Supabase:', newUser)
             }
           } else {
-            console.log('User already exists in Supabase')
+            console.log('User already exists in Supabase:', existingUser)
             // Update user info if needed
             if (existingUser.name !== user.name || existingUser.avatar_url !== user.image) {
-              const { error: updateError } = await supabase
+              const { data: updatedUser, error: updateError } = await supabase
                 .from('users')
                 .update({
                   name: user.name,
@@ -193,9 +209,13 @@ export const authOptions: NextAuthOptions = {
                   updated_at: new Date().toISOString()
                 })
                 .eq('id', user.id)
+                .select()
+                .single()
               
               if (updateError) {
                 console.error('Error updating user in Supabase:', updateError)
+              } else {
+                console.log('User updated successfully:', updatedUser)
               }
             }
           }
@@ -203,6 +223,8 @@ export const authOptions: NextAuthOptions = {
           console.error('Unexpected error in signIn callback:', error)
           // Don't fail the login for unexpected errors
         }
+      } else {
+        console.warn('No user email provided in signIn callback')
       }
       
       console.log('SignIn callback returning true')
