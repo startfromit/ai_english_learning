@@ -17,5 +17,5 @@ jobs:
             service=daily-english
             image=registry.cn-hangzhou.aliyuncs.com/eliteunited/daily-english:latest
             cd ~
-            docker compose pull ${image}
+            docker compose pull ${service}
             docker compose up -d ${service}
