@@ -4,11 +4,6 @@ import { ReactNode } from 'react'
 import { Database } from '@/lib/supabase/database'
 
 // Type declarations for module aliases
-declare module '@/lib/supabase/client' {
-  const createClient: () => SupabaseClient<Database>
-  export { createClient }
-}
-
 declare module '@/lib/auth' {
   export function getSession(): Promise<{
     data: { session: Session | null }
@@ -25,18 +20,6 @@ declare module '@/lib/auth' {
   }>
   
   export function getRemainingPlays(): Promise<number>
-}
-
-declare module '@/components/AuthGuard' {
-  import { FC } from 'react'
-  
-  interface AuthGuardProps {
-    children: ReactNode
-    requiredRole?: string
-  }
-  
-  const AuthGuard: FC<AuthGuardProps>
-  export default AuthGuard
 }
 
 // Global type declarations

@@ -123,7 +123,14 @@ export async function POST(request: Request) {
     ]);
     
     // 从响应中获取内容
-    const content = response.content;
+    let content: string;
+    if (typeof response === 'string') {
+      content = response;
+    } else if (typeof response.content === 'string') {
+      content = response.content;
+    } else {
+      content = JSON.stringify(response.content);
+    }
     const result = await parser.parse(content);
     
     return NextResponse.json({

@@ -1,7 +1,7 @@
 import { createBrowserClient } from '@supabase/ssr'
 import { Database } from './database'
 
-export function createClient() {
+export function createSafeClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 

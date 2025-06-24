@@ -7,7 +7,7 @@ export async function POST() {
     const response = NextResponse.json({ success: true });
     
     // Clear all auth-related cookies
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const allCookies = cookieStore.getAll();
     
     allCookies.forEach(cookie => {

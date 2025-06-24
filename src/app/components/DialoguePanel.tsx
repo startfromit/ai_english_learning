@@ -90,13 +90,11 @@ const DialoguePanel: React.FC<DialoguePanelProps> = ({
     setLoadingIndex(idx);
     const voice = VOICES[gender];
     const cacheKey = `${text}-${voice}-azure-normal`;
+    let url = getAudioCache(cacheKey);
     
     console.log(`Initiating TTS for message ${idx}`, { text, voice, cacheKey });
     
     try {
-      // 尝试从缓存获取
-      let url = getAudioCache(cacheKey);
-      
       if (!url) {
         console.log(`Cache miss for message ${idx}, calling TTS API`);
         
@@ -107,7 +105,7 @@ const DialoguePanel: React.FC<DialoguePanelProps> = ({
           engine: 'azure' as TTSEngine
         };
         console.log('Calling getTTSUrl with options:', ttsOptions);
-        url = await getTTSUrl(ttsOptions);
+        url = (await getTTSUrl(ttsOptions)) ?? undefined;
         
         if (url) {
           console.log(`TTS API success, caching result for message ${idx}`);

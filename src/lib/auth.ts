@@ -1,7 +1,7 @@
 import NextAuth, { getServerSession, NextAuthOptions } from 'next-auth'
 import GithubProvider from 'next-auth/providers/github'
 import CredentialsProvider from "next-auth/providers/credentials";
-import { createClient } from '@/lib/supabase/client';
+import { createSafeClient } from '@/lib/supabase/client';
 import { Database } from './supabase/database'
 import { signOut as nextAuthSignOut } from 'next-auth/react'
 import { User } from '@supabase/supabase-js';
@@ -61,7 +61,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const supabase = createClient();
+  const supabase = createSafeClient();
   const { data: publicUser } = await supabase
     .from('users')
     .select('*')
@@ -81,7 +81,7 @@ export async function canPlayAudio(): Promise<{ canPlay: boolean; remaining: num
     const user = await getCurrentUser()
     if (!user) return { canPlay: false, remaining: 0 }
 
-    const supabase = createClient()
+    const supabase = createSafeClient()
     const today = new Date().toISOString().split('T')[0]
     
     // Get or create user usage record using new table structure
@@ -149,7 +149,7 @@ export async function getRemainingPlays(): Promise<number> {
   const user = await getCurrentUser()
   if (!user) return 0
 
-  const supabase = createClient()
+  const supabase = createSafeClient()
   const today = new Date().toISOString().split('T')[0]
   
   const { data: usage, error } = await supabase
@@ -184,7 +184,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const supabase = createClient();
+        const supabase = createSafeClient();
 
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: credentials.accessToken,
@@ -224,7 +224,7 @@ export const authOptions: NextAuthOptions = {
         password: {  label: "Password", type: "password" }
       },
       async authorize(credentials, req) {
-        const supabase = createClient()
+        const supabase = createSafeClient()
         if (!credentials?.email || !credentials?.password) {
           return null
         }
