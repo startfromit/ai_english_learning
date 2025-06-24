@@ -101,7 +101,7 @@ function VocabularyNav() {
       className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 transition-colors font-medium relative"
     >
       <BookOpenIcon className="w-5 h-5" />
-      <span>{t('vocabulary', '生词本')}</span>
+      <span className="whitespace-nowrap">{t('vocabulary', '生词本')}</span>
       {user && vocabularyCount > 0 && (
         <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
           {vocabularyCount > 99 ? '99+' : vocabularyCount}
