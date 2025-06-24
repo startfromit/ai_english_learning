@@ -13,8 +13,11 @@ RUN pnpm install --frozen-lockfile
 # Copy the rest of the code
 COPY . .
 
-# Build the Next.js app
-RUN pnpm build
+# Copy .env.build for build-time dummy envs
+COPY .env.build .env.build
+# shell form to load envs from .env.build for build step
+SHELL ["/bin/sh", "-c"]
+RUN export $(grep -v '^#' .env.build | xargs) && pnpm build
 
 # ---- Production Stage ----
 FROM node:20-alpine AS runner
