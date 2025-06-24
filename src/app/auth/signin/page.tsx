@@ -30,13 +30,24 @@ export default function SignIn() {
       })
 
       if (result?.error) {
-        setError(result.error === 'CredentialsSignin' ? t('credentials_signin_error', 'Incorrect email or password. Please try again.') : result.error)
+        if (result.error === 'CredentialsSignin') {
+          setError(t('credentials_signin_error', 'Incorrect email or password. Please try again.'))
+        } else if (/network|fetch|timeout|Failed to fetch|NetworkError/i.test(result.error)) {
+          setError(t('network_error', 'Network error, please check your connection.'))
+        } else {
+          setError(result.error)
+        }
       } else if (result?.ok) {
         router.push(redirectTo)
         router.refresh()
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred')
+      // 判断网络异常
+      if (err?.message && /network|fetch|timeout|Failed to fetch|NetworkError/i.test(err.message)) {
+        setError(t('network_error', 'Network error, please check your connection.'))
+      } else {
+        setError(err.message || t('an_unexpected_error_occurred', 'An unexpected error occurred.'))
+      }
     } finally {
       setLoading(false)
     }

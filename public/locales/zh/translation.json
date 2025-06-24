@@ -87,5 +87,6 @@
   "sign_up_failed": "注册失败。",
   "failed_to_send_verification_code": "验证码发送失败。",
   "an_unexpected_error_occurred": "发生了意外错误。",
-  "sign_in_failed": "登录失败：{{error}}"
+  "sign_in_failed": "登录失败：{{error}}",
+  "network_error": "网络异常，请检查网络连接。"
 } 
