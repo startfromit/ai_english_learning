@@ -31,8 +31,11 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          // 使用相对路径调用 API 路由，避免环境变量依赖
-          const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+          // 使用 localhost 调用 API 路由，避免 DNS 解析问题
+          const baseUrl = process.env.NODE_ENV === 'development' 
+            ? 'http://localhost:3000' 
+            : (process.env.NEXTAUTH_URL || 'http://localhost:3000')
+          
           const response = await fetch(`${baseUrl}/api/auth/credentials`, {
             method: 'POST',
             headers: {
