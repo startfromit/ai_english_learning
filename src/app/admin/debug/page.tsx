@@ -7,6 +7,7 @@ import DebugInfo from "./_components/DebugInfo";
 import EmailTestAndDiagnostics from "./_components/EmailTestAndDiagnostics";
 import ForceCleanup from "./_components/ForceCleanup";
 import AdminSettings from "./_components/AdminSettings";
+import GitVersionInfo from "./_components/GitVersionInfo";
 import { Loader2 } from "lucide-react";
 
 const TABS = [
@@ -14,6 +15,7 @@ const TABS = [
   { id: "email-test-diagnostics", label: "Email Test & Diagnostics", component: <EmailTestAndDiagnostics /> },
   { id: "force-cleanup", label: "Force User Cleanup", component: <ForceCleanup /> },
   { id: "admin-settings", label: "Admin Settings", component: <AdminSettings /> },
+  { id: "git-version", label: "Git Version Info", component: <GitVersionInfo /> },
 ];
 
 function DebugPageContent() {
