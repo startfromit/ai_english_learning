@@ -2,6 +2,53 @@ import { NextAuthOptions } from 'next-auth'
 import { createClient } from '@/lib/supabase/server'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GithubProvider from 'next-auth/providers/github'
+import http from 'http'
+import https from 'https'
+
+// 创建一个简单的 HTTP 客户端函数，避免 fetch 的 DNS 解析问题
+function makeRequest(url: string, options: any): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const isHttps = urlObj.protocol === 'https:';
+    const client = isHttps ? https : http;
+    
+    const requestOptions = {
+      hostname: urlObj.hostname,
+      port: urlObj.port || (isHttps ? 443 : 80),
+      path: urlObj.pathname + urlObj.search,
+      method: options.method || 'GET',
+      headers: options.headers || {},
+    };
+
+    const req = client.request(requestOptions, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        try {
+          const jsonData = JSON.parse(data);
+          resolve({
+            ok: (res.statusCode || 0) >= 200 && (res.statusCode || 0) < 300,
+            status: res.statusCode || 0,
+            json: () => Promise.resolve(jsonData)
+          });
+        } catch (error) {
+          reject(new Error('Invalid JSON response'));
+        }
+      });
+    });
+
+    req.on('error', (error) => {
+      reject(error);
+    });
+
+    if (options.body) {
+      req.write(options.body);
+    }
+    req.end();
+  });
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -34,9 +81,9 @@ export const authOptions: NextAuthOptions = {
           // 使用 localhost 调用 API 路由，避免 DNS 解析问题
           const baseUrl = process.env.NODE_ENV === 'development' 
             ? 'http://localhost:3000' 
-            : (process.env.NEXTAUTH_URL || 'http://localhost:3000')
+            : 'http://localhost:3000' // 在容器中使用 localhost，避免 DNS 解析
           
-          const response = await fetch(`${baseUrl}/api/auth/credentials`, {
+          const response = await makeRequest(`${baseUrl}/api/auth/credentials`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -45,20 +92,20 @@ export const authOptions: NextAuthOptions = {
               email: credentials.email,
               password: credentials.password
             })
-          })
+          });
 
           if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-            console.error('Auth API error:', errorData.error)
-            return null
+            const errorData = await response.json();
+            console.error('Auth API error:', errorData.error);
+            return null;
           }
 
-          const userData = await response.json()
-          return userData
+          const userData = await response.json();
+          return userData;
 
         } catch (error) {
-          console.error('Unexpected auth error:', error)
-          return null
+          console.error('Unexpected auth error:', error);
+          return null;
         }
       }
     })
