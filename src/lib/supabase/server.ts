@@ -2,6 +2,11 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 export function createClient() {
+
+  console.log('2 SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+  console.log('2 SUPABASE_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  console.log('2 env', process.env);
+  
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
