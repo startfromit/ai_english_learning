@@ -1,5 +1,7 @@
 # AI English Learning
 
+![img](docs/image.png)
+
 An AI-powered English learning application built with Next.js, Supabase, and NextAuth.
 
 ## Features
