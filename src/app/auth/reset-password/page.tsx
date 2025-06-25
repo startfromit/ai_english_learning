@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createSafeClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
@@ -16,7 +16,7 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     // This effect handles the initial authentication state change
     // when the component mounts with a reset token in the URL.
-    const supabase = createSafeClient()
+    const supabase = createClient()
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         // The user is now in a state where they can update their password.
@@ -43,7 +43,7 @@ export default function ResetPasswordPage() {
     setError('')
     setMessage('')
 
-    const supabase = createSafeClient()
+    const supabase = createClient()
     const { error } = await supabase.auth.updateUser({
       password: password,
     })
