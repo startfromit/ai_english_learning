@@ -30,49 +30,32 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const supabase = createClient()
-        
         try {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email: credentials.email,
-            password: credentials.password
+          // 使用相对路径调用 API 路由，避免环境变量依赖
+          const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+          const response = await fetch(`${baseUrl}/api/auth/credentials`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password
+            })
           })
 
-          if (error) {
-            console.error('Auth error:', error.message)
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+            console.error('Auth API error:', errorData.error)
             return null
           }
 
-          if (data.user) {
-            // Check if user's email is verified
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('email_verified')
-              .eq('id', data.user.id)
-              .single()
+          const userData = await response.json()
+          return userData
 
-            if (userError) {
-              console.error('Error checking user verification status:', userError)
-              return null
-            }
-
-            // If user is not verified, return null to prevent login
-            if (!userData?.email_verified) {
-              throw new Error('Please verify your email address before signing in')
-            }
-
-            return {
-              id: data.user.id,
-              email: data.user.email,
-              name: data.user.user_metadata?.name || data.user.email,
-              image: data.user.user_metadata?.avatar_url
-            }
-          }
-
-          return null
         } catch (error) {
           console.error('Unexpected auth error:', error)
-          throw error
+          return null
         }
       }
     })
